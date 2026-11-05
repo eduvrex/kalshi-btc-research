@@ -1,0 +1,252 @@
+<title>Signal Room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F3F4F6; --surface: #FFFFFF; --surface2: #EBEDF0;
+    --ink: #1B1E23; --muted: #5B6470; --line: #DFE2E7;
+    --accent: #A87718; --bar: #4A7BA6; --bar-soft: #4A7BA633;
+    --ok: #2E7D54; --down: #B84A42; --down-soft: #B84A4226;
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+      --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+      --accent: #D9A13B; --bar: #6B93B8; --bar-soft: #6B93B833;
+      --ok: #4CAF7D; --down: #D4574E; --down-soft: #D4574E2E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+    --accent: #D9A13B; --bar: #6B93B8; --bar-soft: #6B93B833;
+    --ok: #4CAF7D; --down: #D4574E; --down-soft: #D4574E2E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Archivo", system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 56px; }
+  .mono { font-family: "Chivo Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; margin-bottom: 6px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  h1 .tick { color: var(--accent); }
+  .asof { color: var(--muted); font-size: 13px; }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 22px; max-width: 68ch; }
+  h2 {
+    font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); margin: 30px 0 10px; display: flex; align-items: center; gap: 10px;
+  }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 10px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 13px 15px; }
+  .card h3 { margin: 0 0 3px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+  .pill { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; padding: 2.5px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+  .pill.down { background: var(--down-soft); color: var(--down); }
+  .pill.idle { background: var(--surface2); color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .tile .v { font-size: 21px; font-weight: 600; }
+  .tile .l { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .chart { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 15px 10px; }
+  .chart .cap { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .strip { display: flex; align-items: flex-end; gap: 2px; height: 90px; }
+  .strip .b { flex: 1; min-width: 3px; background: var(--bar); border-radius: 2px 2px 0 0; position: relative; }
+  .strip .b.hole { background: var(--down); }
+  .strip .b.zero { height: 2px !important; background: var(--down); opacity: 0.55; }
+  .xlabels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+  .legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+  .prog { margin: 12px 0; }
+  .prog .t { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; gap: 10px; }
+  .prog .t b { font-weight: 600; }
+  .track { height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; position: relative; }
+  .fill { height: 100%; background: var(--bar); border-radius: 5px; }
+  .fill.done { background: var(--ok); }
+  .range-track { height: 14px; background: var(--surface2); border-radius: 4px; position: relative; overflow: hidden; }
+  .range-fill { position: absolute; top: 0; bottom: 0; background: var(--bar); border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 6.5px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.num { text-align: right; }
+  tr:last-child td { border-bottom: none; }
+  .tablewrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+  .findings { display: grid; gap: 9px; }
+  .finding { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 8px; padding: 11px 14px; font-size: 13.5px; }
+  .finding.dead { border-left-color: var(--down); }
+  .finding.live { border-left-color: var(--accent); }
+  .finding.open { border-left-color: var(--bar); }
+  .finding b { font-weight: 600; }
+  .finding .tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; margin-right: 8px; }
+  .finding.dead .tag { color: var(--down); }
+  .finding.live .tag { color: var(--accent); }
+  .finding.open .tag { color: var(--bar); }
+  details { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  summary { cursor: pointer; }
+  .foot { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; max-width: 75ch; }
+  .tt { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 4px 9px; border-radius: 5px; font-size: 12px; display: none; z-index: 10; white-space: nowrap; }
+  @media (prefers-reduced-motion: no-preference) { .fill, .range-fill { transition: width 0.6s ease; } }
+</style>
+<div class="wrap">
+  <header>
+    <h1>Signal <span class="tick">Room</span></h1>
+    <span class="asof mono" id="asof"></span>
+  </header>
+  <p class="sub">Everything the Kalshi research system has captured, what it is capturing right now, and what the data has said so far. Snapshot page — Claude regenerates it during work sessions; ask for a refresh anytime.</p>
+
+  <h2>Feeds right now</h2>
+  <div class="cards" id="feeds"></div>
+
+  <h2>What we're holding</h2>
+  <div class="tiles" id="tiles"></div>
+
+  <h2>Capture continuity — BTC index proxy, 1 tick/second target</h2>
+  <div class="chart">
+    <div class="cap">Ticks per hour (UTC). A full hour is 3,600. Short or missing bars are permanent holes — twice the Mac slept on battery, once the venue network dropped.</div>
+    <div class="strip" id="strip"></div>
+    <div class="xlabels" id="xlabels"></div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--bar)"></span>captured</span>
+      <span><span class="sw" style="background:var(--down)"></span>hole (&lt;50% of the hour)</span>
+    </div>
+    <details><summary>Hourly table</summary><div id="continuity-table"></div></details>
+  </div>
+
+  <h2>Backfills &amp; downloads</h2>
+  <div class="chart" id="progress"></div>
+
+  <h2>Data inventory</h2>
+  <div class="tablewrap"><table id="inventory"></table></div>
+
+  <h2>What the data has said</h2>
+  <div class="findings" id="findings"></div>
+
+  <h2>Dislocation events — the live second-scale test</h2>
+  <div class="chart" id="events"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+<div class="tt" id="tt"></div>
+<script>
+const DATA = {"generated_at":"2026-08-28T15:45:25.056Z","markets":[{"series_ticker":"KXBTC","total":201426,"settled":200040,"first_close":"2026-07-12T09:00:00.000Z","last_close":"2026-08-30T04:00:00.000Z"},{"series_ticker":"KXBTC15M","total":6401,"settled":6347,"first_close":"2026-06-22T00:00:00.000Z","last_close":"2026-08-29T04:00:00.000Z"},{"series_ticker":"KXCOPPER15M","total":70,"settled":17,"first_close":"2026-08-27T20:45:00.000Z","last_close":"2026-08-29T04:00:00.000Z"},{"series_ticker":"KXGOLD15M","total":1935,"settled":1882,"first_close":"2026-07-31T18:15:00.000Z","last_close":"2026-08-29T04:00:00.000Z"},{"series_ticker":"KXNATGAS15M","total":70,"settled":17,"first_close":"2026-08-27T20:45:00.000Z","last_close":"2026-08-29T04:00:00.000Z"},{"series_ticker":"KXSILVER15M","total":1935,"settled":1882,"first_close":"2026-07-31T18:15:00.000Z","last_close":"2026-08-29T04:00:00.000Z"},{"series_ticker":"KXWTI15M","total":1935,"settled":1882,"first_close":"2026-07-31T18:15:00.000Z","last_close":"2026-08-29T04:00:00.000Z"}],"candles":{"n":"375917","first":"2026-06-21T23:46:00.000Z","last":"2026-08-28T00:16:00.000Z"},"trades":[{"source":"backfill","n":"36141075","first":"2026-08-15T16:46:30.329Z","last":"2026-08-28T00:14:59.796Z"},{"source":"ws","n":"39840","first":"2026-08-28T14:20:40.109Z","last":"2026-08-28T14:57:25.475Z"}],"books":{"snapshots":"37654","deltas":"1878200","first_snap":"2026-08-28T14:25:26.035Z","markets":"268"},"index_sources":[{"source":"bitstamp_mid","n":"22378","first":"2026-08-28T00:20:42.333Z","last":"2026-08-28T15:46:18.174Z"},{"source":"coinbase_mid","n":"21827","first":"2026-08-28T00:20:41.333Z","last":"2026-08-28T15:46:18.174Z"},{"source":"gemini_mid","n":"21755","first":"2026-08-28T00:20:42.333Z","last":"2026-08-28T15:46:18.174Z"},{"source":"kraken_mid","n":"21814","first":"2026-08-28T00:20:42.333Z","last":"2026-08-28T15:46:18.174Z"},{"source":"pm_binance","n":"12264","first":"2026-08-28T00:23:25.000Z","last":"2026-08-28T14:57:25.000Z"},{"source":"pm_chainlink","n":"11798","first":"2026-08-28T00:20:41.000Z","last":"2026-08-28T14:57:24.000Z"},{"source":"proxy_composite","n":"22503","first":"2026-08-28T00:20:41.333Z","last":"2026-08-28T15:46:18.174Z"},{"source":"pyth_btc","n":"2715","first":"2026-08-28T14:33:19.000Z","last":"2026-08-28T15:46:18.000Z"},{"source":"pyth_wtiv6","n":"2715","first":"2026-08-28T14:33:19.000Z","last":"2026-08-28T15:46:18.000Z"},{"source":"pyth_wtix6","n":"2715","first":"2026-08-28T14:33:19.000Z","last":"2026-08-28T15:46:18.000Z"},{"source":"pyth_xag","n":"2715","first":"2026-08-28T14:33:19.000Z","last":"2026-08-28T15:46:18.000Z"},{"source":"pyth_xau","n":"2715","first":"2026-08-28T14:33:19.000Z","last":"2026-08-28T15:46:18.000Z"}],"continuity":[{"hour":"2026-08-28T00:00:00.000Z","n":2356},{"hour":"2026-08-28T01:00:00.000Z","n":3597},{"hour":"2026-08-28T02:00:00.000Z","n":3597},{"hour":"2026-08-28T03:00:00.000Z","n":1464},{"hour":"2026-08-28T04:00:00.000Z","n":78},{"hour":"2026-08-28T05:00:00.000Z","n":54},{"hour":"2026-08-28T06:00:00.000Z","n":248},{"hour":"2026-08-28T07:00:00.000Z","n":2508},{"hour":"2026-08-28T08:00:00.000Z","n":1091},{"hour":"2026-08-28T09:00:00.000Z","n":21},{"hour":"2026-08-28T10:00:00.000Z","n":54},{"hour":"2026-08-28T11:00:00.000Z","n":236},{"hour":"2026-08-28T12:00:00.000Z","n":39},{"hour":"2026-08-28T13:00:00.000Z","n":2371},{"hour":"2026-08-28T14:00:00.000Z","n":2486},{"hour":"2026-08-28T15:00:00.000Z","n":2303}],"book_hours":[{"hour":"2026-08-28T14:00:00.000Z","n":37654}],"backfill":{"m15_candles_done":12015,"m15_total":12052,"btc_candles_done":12703,"trades_done":3834,"btc_total":200188},"spot":[{"exchange":"coinbase","has_cursor":true,"oldest_ts":"2026-08-17T12:02:55.889Z","newest_ts":"2026-08-28T13:24:32.005Z"},{"exchange":"kraken","has_cursor":true,"oldest_ts":"2026-05-30T13:24:34.282Z","newest_ts":"2026-08-28T15:44:44.695Z"}],"spot_bars":[{"exchange":"coinbase","n":"936631","first":"2026-08-17T10:49:12.000Z","last":"2026-08-28T13:24:32.000Z"},{"exchange":"kraken","n":"1734152","first":"2026-05-30T13:24:42.000Z","last":"2026-08-28T15:44:42.000Z"}],"events":{"n":0,"max_gap":0,"first":null,"last":null},"recent_events":[],"heartbeats":[{"collector":"collector-kalshi","ts":"2026-08-28T15:46:13.587Z","detail":{"active":250,"deltas":1456426,"trades":31334,"seqGaps":4,"connected":false,"snapshots":37654,"reconnects":59}},{"collector":"collector-prices","ts":"2026-08-28T15:46:13.527Z","detail":{"samples":2927,"pythMsgs":13550,"rtdsMsgs":884,"geminiMsgs":112132,"krakenMsgs":52999,"bitstampMsgs":27580,"coinbaseMsgs":32030}},{"collector":"dislocation-monitor","ts":"2026-08-28T15:46:13.532Z","detail":{"open":0,"sigma":8.497727212021876e-05,"ticks":1029,"evaluations":0,"eventsClosed":0,"eventsOpened":0}}],"rates":{"deltas_10m":0,"idx_10m":5997,"trades_10m":0},"db_size":{"size":"22 GB","bytes":"23928986647"},"narrative":{"kalshi_state":"BLOCKED","kalshi_pill":"down","kalshi_desc":"Captured 37.6k 1-second book snapshots + 1.88M depth deltas across ~250 markets this morning — then the current network started blocking Kalshi (~09:10 MDT). Reconnects automatically; nothing on the machine can bypass a network-level block. Fastest fix: hotspot or another network.","spot_desc":"Coinbase and Kraken trade history → 1-second bars, both legs running and unaffected by the Kalshi block.","events_desc":"No validated events yet — honestly. The monitor found phantom events twice during shakedown (float-dust books, then commodity strikes scored against the BTC proxy); both bug classes are fixed and the ledger was wiped clean. It is armed and will accumulate real BTC15M events whenever Kalshi books are flowing. This ledger is the direct test of the second-scale dislocation thesis.","findings":[{"cls":"dead","tag":"Refuted","text":"<b>The commodity cheap-tail claim.<\/b> Gold/silver/WTI contracts at ≤15¢ with 2–5 min left resolve exactly as often as priced — flat per-market, −24% to −39% on risk after fees. 12,000 markets, 162k observations."},{"cls":"dead","tag":"Artifact","text":"<b>BTC dip-overshoot (+4.7z) died at the fill level.<\/b> At the first tradeable touch the market is exactly right (6.8¢ cost, 6.7% win rate); the gap only existed against an average quote no order can obtain."},{"cls":"open","tag":"Open","text":"<b>The second-scale thesis — your original observation — is still untested.<\/b> 1-minute candles structurally cannot see it. The book collector + dislocation monitor exist to answer it; every hour of clean capture is evidence accumulating."}],"foot":"Reports live in <span class=\"mono\">reports/<\/span>. This page is a static snapshot built by scripts/build-dashboard.js from scripts/dashboard-data.js output."}};
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString('en-US');
+const compact = (n) => { n = Number(n);
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M';
+  if (n >= 1e4) return Math.round(n / 1e3) + 'k';
+  return fmt(n); };
+const hhUTC = (iso) => iso.slice(11, 16) + 'Z';
+const dayUTC = (iso) => iso.slice(5, 10);
+
+$('asof').textContent = 'as of ' + DATA.generated_at.slice(0, 16).replace('T', ' ') + ' UTC';
+
+// ---- feeds ----
+const N = DATA.narrative;
+const feedCards = [
+  { name: 'Kalshi order books', state: N.kalshi_state, pill: N.kalshi_pill,
+    desc: N.kalshi_desc },
+  { name: 'BTC index proxy', state: DATA.rates.idx_10m > 3000 ? 'LIVE' : 'DEGRADED',
+    pill: DATA.rates.idx_10m > 3000 ? 'ok' : 'down',
+    desc: '12 sources at ~1 Hz: 4 exchange mids + composite, Polymarket relays, 5 Pyth feeds. ' + fmt(DATA.rates.idx_10m) + ' ticks in the last 10 min.' },
+  { name: 'Dislocation monitor', state: 'ARMED', pill: 'ok',
+    desc: 'Compares proxy fair value vs the live BTC15M book every second; waits out the Kalshi block, resumes alone.' },
+  { name: 'Spot history downloads', state: 'RUNNING', pill: 'ok',
+    desc: N.spot_desc }
+];
+$('feeds').innerHTML = feedCards.map((c) =>
+  '<div class="card"><h3>' + c.name + '<span class="pill ' + c.pill + '">' + c.state + '</span></h3><p>' + c.desc + '</p></div>'
+).join('');
+
+// ---- tiles ----
+const totalMarkets = DATA.markets.reduce((s, m) => s + m.total, 0);
+const totalTrades = DATA.trades.reduce((s, t) => s + Number(t.n), 0);
+const idxTotal = DATA.index_sources.reduce((s, x) => s + Number(x.n), 0);
+const spotTotal = DATA.spot_bars.reduce((s, x) => s + Number(x.n), 0);
+const tiles = [
+  [DATA.db_size.size.replace(' ', ''), 'database on disk'],
+  [compact(totalMarkets), 'market records · 7 series'],
+  [compact(totalTrades), 'trades'],
+  [compact(DATA.candles.n), '1-min candles'],
+  [compact(DATA.books.deltas), 'book deltas'],
+  [compact(DATA.books.snapshots), '1s book snapshots'],
+  [compact(idxTotal), 'index ticks'],
+  [compact(spotTotal), 'spot 1s bars']
+];
+$('tiles').innerHTML = tiles.map(([v, l]) =>
+  '<div class="tile"><div class="v mono">' + v + '</div><div class="l">' + l + '</div></div>'
+).join('');
+
+// ---- continuity strip ----
+const byHour = new Map(DATA.continuity.map((r) => [r.hour.slice(0, 13), r.n]));
+const hours = [];
+const start = new Date(DATA.continuity[0].hour);
+for (let t = start.getTime(); t <= Date.now() - 3600e3; t += 3600e3) {
+  const iso = new Date(t).toISOString();
+  hours.push({ iso, n: byHour.get(iso.slice(0, 13)) || 0 });
+}
+const tt = $('tt');
+$('strip').innerHTML = hours.map((h) => {
+  const pct = Math.min(1, h.n / 3600);
+  const cls = h.n === 0 ? 'b zero' : pct < 0.5 ? 'b hole' : 'b';
+  return '<div class="' + cls + '" style="height:' + Math.max(2, pct * 100) + '%" data-l="' +
+    dayUTC(h.iso) + ' ' + hhUTC(h.iso) + ' — ' + fmt(h.n) + ' / 3,600"></div>';
+}).join('');
+document.querySelectorAll('.strip .b').forEach((b) => {
+  b.addEventListener('mousemove', (e) => {
+    tt.style.display = 'block'; tt.textContent = b.dataset.l;
+    tt.style.left = Math.min(e.clientX + 12, innerWidth - 190) + 'px'; tt.style.top = (e.clientY - 34) + 'px';
+  });
+  b.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+});
+$('xlabels').innerHTML = '<span class="mono">' + dayUTC(hours[0].iso) + ' ' + hhUTC(hours[0].iso) +
+  '</span><span class="mono">' + dayUTC(hours[hours.length - 1].iso) + ' ' + hhUTC(hours[hours.length - 1].iso) + '</span>';
+$('continuity-table').innerHTML = '<table><tr><th>hour (UTC)</th><th style="text-align:right">ticks</th></tr>' +
+  hours.map((h) => '<tr><td class="mono">' + dayUTC(h.iso) + ' ' + hhUTC(h.iso) + '</td><td class="num mono">' + fmt(h.n) + '</td></tr>').join('') + '</table>';
+
+// ---- progress ----
+const B = DATA.backfill;
+const DAY = 86400e3;
+const target0 = Date.now() - 90 * DAY;
+function rangeBar(label, firstIso, lastIso, note) {
+  const a = Math.max(0, (new Date(firstIso) - target0) / (Date.now() - target0));
+  const b = Math.min(1, (new Date(lastIso) - target0) / (Date.now() - target0));
+  const covered = Math.round((b - a) * 100);
+  return '<div class="prog"><div class="t"><span><b>' + label + '</b> · ' + note + '</span>' +
+    '<span class="mono">' + covered + '% of 90d</span></div>' +
+    '<div class="range-track"><div class="range-fill" style="left:' + (a * 100) + '%;width:' + ((b - a) * 100) + '%"></div></div></div>';
+}
+function progBar(label, done, total, note) {
+  const pct = total ? done / total : 0;
+  return '<div class="prog"><div class="t"><span><b>' + label + '</b>' + (note ? ' · ' + note : '') + '</span>' +
+    '<span class="mono">' + fmt(done) + ' / ' + fmt(total) + ' · ' + (pct * 100).toFixed(1) + '%</span></div>' +
+    '<div class="track"><div class="fill' + (pct > 0.995 ? ' done' : '') + '" style="width:' + (pct * 100) + '%"></div></div></div>';
+}
+const cb = DATA.spot_bars.find((s) => s.exchange === 'coinbase');
+const kr = DATA.spot_bars.find((s) => s.exchange === 'kraken');
+$('progress').innerHTML =
+  progBar('15-minute series · candles', B.m15_candles_done, B.m15_total, 'the calibration dataset — complete') +
+  progBar('KXBTC hourly · candles', B.btc_candles_done, B.btc_total, 'paused by the Kalshi block, auto-resumes') +
+  progBar('Trades deep-pull', B.trades_done, B.m15_total + B.btc_total, 'runs after candles') +
+  rangeBar('Coinbase spot 1s bars', cb.first, cb.last, 'walking backwards from now') +
+  rangeBar('Kraken spot 1s bars', kr.first, kr.last, 'walking forward from the 90-day cutoff');
+
+// ---- inventory ----
+const invRows = DATA.markets.map((m) =>
+  '<tr><td class="mono">' + m.series_ticker + '</td><td class="num mono">' + fmt(m.total) + '</td><td class="num mono">' + fmt(m.settled) + '</td>' +
+  '<td class="mono">' + dayUTC(m.first_close) + ' → ' + dayUTC(m.last_close) + '</td></tr>'
+).join('');
+$('inventory').innerHTML = '<tr><th>series</th><th style="text-align:right">markets</th><th style="text-align:right">settled</th><th>close-time span</th></tr>' + invRows;
+
+// ---- findings ----
+$('findings').innerHTML = N.findings.map((f) =>
+  '<div class="finding ' + f.cls + '"><span class="tag">' + f.tag + '</span>' + f.text + '</div>'
+).join('');
+
+// ---- events ----
+$('events').innerHTML = '<div class="cap" style="font-size:13px;color:var(--muted)">' + N.events_desc + '</div>';
+
+$('foot').innerHTML = N.foot;
+</script>

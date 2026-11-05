@@ -1,0 +1,188 @@
+<title>Strike vs Settle</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F3F4F6; --surface: #FFFFFF; --surface2: #EBEDF0;
+    --ink: #1B1E23; --muted: #5B6470; --line: #DFE2E7;
+    --accent: #A87718; --path: #4A7BA6;
+    --yes: #2E7D54; --no: #B84A42;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+      --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+      --accent: #D9A13B; --path: #6B93B8;
+      --yes: #4CAF7D; --no: #D4574E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+    --accent: #D9A13B; --path: #6B93B8;
+    --yes: #4CAF7D; --no: #D4574E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 20px 16px 48px; }
+  .mono { font-family: "Chivo Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0; }
+  h1 .a { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 18px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; }
+  .tile .v { font-size: 19px; font-weight: 600; }
+  .tile .v .yes { color: var(--yes); } .tile .v .no { color: var(--no); }
+  .tile .l { font-size: 11.5px; color: var(--muted); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 15px 10px; margin-bottom: 14px; }
+  .panel h2 { margin: 0 0 2px; font-size: 13.5px; font-weight: 600; }
+  .panel .cap { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+  .sw.sq { border-radius: 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+  td { padding: 5px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.num { text-align: right; }
+  td .yes { color: var(--yes); font-weight: 600; } td .no { color: var(--no); font-weight: 600; }
+  .tablewrap { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
+  .tt { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 4px 9px; border-radius: 5px; font-size: 12px; display: none; z-index: 10; white-space: nowrap; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 18px; max-width: 72ch; }
+</style>
+<div class="wrap">
+  <header><h1>Strike <span class="a">vs</span> Settle</h1><span class="sub mono" id="range"></span></header>
+  <p class="sub">KXBTC15M — each 15-minute window's opening reference (strike) against its official settlement (60s BRTI average). All times <b>Mountain Time</b>. Temporary board.</p>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="panel">
+    <h2>Settlement path</h2>
+    <div class="cap">Each dot is one window's official settlement; the previous dot is its strike. Dot color = result.</div>
+    <svg id="path" viewBox="0 0 960 240" role="img" aria-label="BTC settlement values over 24 hours"></svg>
+    <div class="legend"><span><span class="sw" style="background:var(--yes)"></span>settled YES (≥ strike)</span><span><span class="sw" style="background:var(--no)"></span>settled NO</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>Margin per window — settle minus strike</h2>
+    <div class="cap">Up bars settled YES, down bars NO. Bar length = how far the 60s settlement average finished from the strike. Hover for exact values.</div>
+    <svg id="bars" viewBox="0 0 960 200" role="img" aria-label="Settlement minus strike per window"></svg>
+  </div>
+
+  <details open><summary>All windows (table)</summary>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </details>
+  <p class="foot" id="foot"></p>
+</div>
+<div class="tt" id="tt"></div>
+<script>const DATA = [{"close_mt":"2026-08-27 11:15","strike":80404.69,"settle":80622.31,"result":"yes"},{"close_mt":"2026-08-27 11:30","strike":80622.31,"settle":80746.4,"result":"yes"},{"close_mt":"2026-08-27 11:45","strike":80746.4,"settle":80526.75,"result":"no"},{"close_mt":"2026-08-27 12:00","strike":80526.75,"settle":80477.1,"result":"no"},{"close_mt":"2026-08-27 12:15","strike":80477.1,"settle":80071.33,"result":"no"},{"close_mt":"2026-08-27 12:30","strike":80071.33,"settle":79923.01,"result":"no"},{"close_mt":"2026-08-27 12:45","strike":79923.01,"settle":79947.12,"result":"yes"},{"close_mt":"2026-08-27 13:00","strike":79947.12,"settle":80149.37,"result":"yes"},{"close_mt":"2026-08-27 13:15","strike":80149.37,"settle":80181.84,"result":"yes"},{"close_mt":"2026-08-27 13:30","strike":80181.84,"settle":80176.55,"result":"no"},{"close_mt":"2026-08-27 13:45","strike":80176.55,"settle":80019.4,"result":"no"},{"close_mt":"2026-08-27 14:00","strike":80019.4,"settle":79943.87,"result":"no"},{"close_mt":"2026-08-27 14:15","strike":79943.87,"settle":79975.79,"result":"yes"},{"close_mt":"2026-08-27 14:30","strike":79975.79,"settle":80011.47,"result":"yes"},{"close_mt":"2026-08-27 14:45","strike":80011.47,"settle":80032.76,"result":"yes"},{"close_mt":"2026-08-27 15:00","strike":80032.76,"settle":80092.55,"result":"yes"},{"close_mt":"2026-08-27 15:15","strike":80092.55,"settle":80109.85,"result":"yes"},{"close_mt":"2026-08-27 15:30","strike":80109.85,"settle":80056.35,"result":"no"},{"close_mt":"2026-08-27 15:45","strike":80056.35,"settle":80030.77,"result":"no"},{"close_mt":"2026-08-27 16:00","strike":80030.77,"settle":80195.64,"result":"yes"},{"close_mt":"2026-08-27 16:15","strike":80195.64,"settle":80267.94,"result":"yes"},{"close_mt":"2026-08-27 16:30","strike":80267.94,"settle":80260.25,"result":"no"},{"close_mt":"2026-08-27 16:45","strike":80260.25,"settle":80306.29,"result":"yes"},{"close_mt":"2026-08-27 17:00","strike":80306.29,"settle":80320.98,"result":"yes"},{"close_mt":"2026-08-27 17:15","strike":80320.98,"settle":80202.34,"result":"no"},{"close_mt":"2026-08-27 17:30","strike":80202.34,"settle":80349.16,"result":"yes"},{"close_mt":"2026-08-27 17:45","strike":80349.16,"settle":80289.36,"result":"no"},{"close_mt":"2026-08-27 18:00","strike":80289.36,"settle":80276.37,"result":"no"},{"close_mt":"2026-08-27 18:15","strike":80276.37,"settle":80263.19,"result":"no"},{"close_mt":"2026-08-27 18:30","strike":80263.19,"settle":80443.72,"result":"yes"},{"close_mt":"2026-08-27 18:45","strike":80443.72,"settle":80423.05,"result":"no"},{"close_mt":"2026-08-27 19:00","strike":80423.05,"settle":80607.22,"result":"yes"},{"close_mt":"2026-08-27 19:15","strike":80607.22,"settle":80787.57,"result":"yes"},{"close_mt":"2026-08-27 19:30","strike":80787.57,"settle":81143.9,"result":"yes"},{"close_mt":"2026-08-27 19:45","strike":81143.9,"settle":80895.91,"result":"no"},{"close_mt":"2026-08-27 20:00","strike":80895.91,"settle":80514.38,"result":"no"},{"close_mt":"2026-08-27 20:15","strike":80514.38,"settle":80286.89,"result":"no"},{"close_mt":"2026-08-27 20:30","strike":80286.89,"settle":79961.7,"result":"no"},{"close_mt":"2026-08-27 20:45","strike":79961.7,"settle":80014.41,"result":"yes"},{"close_mt":"2026-08-27 21:00","strike":80014.41,"settle":79954.21,"result":"no"},{"close_mt":"2026-08-27 21:15","strike":79954.21,"settle":79910.31,"result":"no"},{"close_mt":"2026-08-27 21:30","strike":79910.31,"settle":79932.62,"result":"yes"},{"close_mt":"2026-08-27 21:45","strike":79932.62,"settle":79837.68,"result":"no"},{"close_mt":"2026-08-27 22:00","strike":79837.68,"settle":79837.72,"result":"yes"},{"close_mt":"2026-08-27 22:15","strike":79837.72,"settle":79856.75,"result":"yes"},{"close_mt":"2026-08-27 22:30","strike":79856.75,"settle":79826.87,"result":"no"},{"close_mt":"2026-08-27 22:45","strike":79826.87,"settle":79724.27,"result":"no"},{"close_mt":"2026-08-27 23:00","strike":79724.27,"settle":79663.82,"result":"no"},{"close_mt":"2026-08-27 23:15","strike":79663.82,"settle":79634.97,"result":"no"},{"close_mt":"2026-08-27 23:30","strike":79634.97,"settle":79714.53,"result":"yes"},{"close_mt":"2026-08-27 23:45","strike":79714.53,"settle":79818.82,"result":"yes"},{"close_mt":"2026-08-28 00:00","strike":79818.82,"settle":79695.41,"result":"no"},{"close_mt":"2026-08-28 00:15","strike":79695.41,"settle":79912.21,"result":"yes"},{"close_mt":"2026-08-28 00:30","strike":79912.21,"settle":79844.52,"result":"no"},{"close_mt":"2026-08-28 00:45","strike":79844.52,"settle":79871.5,"result":"yes"},{"close_mt":"2026-08-28 01:00","strike":79871.5,"settle":79917.97,"result":"yes"},{"close_mt":"2026-08-28 01:15","strike":79917.97,"settle":79713.15,"result":"no"},{"close_mt":"2026-08-28 01:30","strike":79713.15,"settle":79810.84,"result":"yes"},{"close_mt":"2026-08-28 01:45","strike":79810.84,"settle":79601.92,"result":"no"},{"close_mt":"2026-08-28 02:00","strike":79601.92,"settle":79673.81,"result":"yes"},{"close_mt":"2026-08-28 02:15","strike":79673.81,"settle":79747.92,"result":"yes"},{"close_mt":"2026-08-28 02:30","strike":79747.92,"settle":79795.05,"result":"yes"},{"close_mt":"2026-08-28 02:45","strike":79795.05,"settle":79734.4,"result":"no"},{"close_mt":"2026-08-28 03:00","strike":79734.4,"settle":79513.27,"result":"no"},{"close_mt":"2026-08-28 03:15","strike":79513.27,"settle":79392.1,"result":"no"},{"close_mt":"2026-08-28 03:30","strike":79392.1,"settle":79391.55,"result":"no"},{"close_mt":"2026-08-28 03:45","strike":79391.55,"settle":79312.96,"result":"no"},{"close_mt":"2026-08-28 04:00","strike":79312.96,"settle":79295.98,"result":"no"},{"close_mt":"2026-08-28 04:15","strike":79295.98,"settle":79220.72,"result":"no"},{"close_mt":"2026-08-28 04:30","strike":79220.72,"settle":79288.36,"result":"yes"},{"close_mt":"2026-08-28 04:45","strike":79288.36,"settle":79338.97,"result":"yes"},{"close_mt":"2026-08-28 05:00","strike":79338.97,"settle":79558.03,"result":"yes"},{"close_mt":"2026-08-28 05:15","strike":79558.03,"settle":79699.07,"result":"yes"},{"close_mt":"2026-08-28 05:30","strike":79699.07,"settle":79660.51,"result":"no"},{"close_mt":"2026-08-28 05:45","strike":79660.51,"settle":79622.71,"result":"no"},{"close_mt":"2026-08-28 06:15","strike":79604.96,"settle":79532.91,"result":"no"},{"close_mt":"2026-08-28 06:30","strike":79532.91,"settle":79548.17,"result":"yes"},{"close_mt":"2026-08-28 06:45","strike":79548.17,"settle":79394.45,"result":"no"},{"close_mt":"2026-08-28 07:00","strike":79394.45,"settle":79416.53,"result":"yes"},{"close_mt":"2026-08-28 07:15","strike":79416.53,"settle":79365.04,"result":"no"},{"close_mt":"2026-08-28 07:30","strike":79365.04,"settle":79210.25,"result":"no"},{"close_mt":"2026-08-28 07:45","strike":79210.25,"settle":79110.22,"result":"no"},{"close_mt":"2026-08-28 08:00","strike":79110.22,"settle":79525.79,"result":"yes"},{"close_mt":"2026-08-28 08:15","strike":79525.79,"settle":78616.61,"result":"no"},{"close_mt":"2026-08-28 08:30","strike":78616.61,"settle":78861.22,"result":"yes"},{"close_mt":"2026-08-28 08:45","strike":78861.22,"settle":79431.99,"result":"yes"},{"close_mt":"2026-08-28 09:00","strike":79431.99,"settle":79545.69,"result":"yes"},{"close_mt":"2026-08-28 09:15","strike":79545.69,"settle":79339.52,"result":"no"},{"close_mt":"2026-08-28 09:30","strike":79339.52,"settle":79325.52,"result":"no"},{"close_mt":"2026-08-28 09:45","strike":79325.52,"settle":78821.48,"result":"no"},{"close_mt":"2026-08-28 10:00","strike":78821.48,"settle":78360.56,"result":"no"},{"close_mt":"2026-08-28 10:15","strike":78360.56,"settle":77840.02,"result":"no"},{"close_mt":"2026-08-28 10:30","strike":77840.02,"settle":77526.59,"result":"no"},{"close_mt":"2026-08-28 10:45","strike":77526.59,"settle":77823.82,"result":"yes"},{"close_mt":"2026-08-28 11:00","strike":77823.82,"settle":77803.27,"result":"no"}];</script>
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt$ = (v) => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const margins = DATA.map((d) => d.settle - d.strike);
+const hhmm = (s) => s.slice(11);
+const dd = (s) => s.slice(5, 10);
+
+$('range').textContent = DATA[0].close_mt + ' → ' + DATA[DATA.length - 1].close_mt + ' MT';
+
+// tiles
+const yes = DATA.filter((d) => d.result === 'yes').length;
+const absm = margins.map(Math.abs).sort((a, b) => a - b);
+const median = absm[Math.floor(absm.length / 2)];
+const closest = DATA[margins.map(Math.abs).indexOf(absm[0])];
+const biggest = DATA[margins.map(Math.abs).indexOf(absm[absm.length - 1])];
+$('tiles').innerHTML = [
+  ['<span class="yes">' + yes + ' YES</span> / <span class="no">' + (DATA.length - yes) + ' NO</span>', DATA.length + ' windows, 24h'],
+  ['<span class="mono">' + fmt$(median) + '</span>', 'median |settle − strike|'],
+  ['<span class="mono">' + fmt$(absm[0]) + '</span>', 'closest call · ' + hhmm(closest.close_mt) + ' MT'],
+  ['<span class="mono">' + fmt$(absm[absm.length - 1]) + '</span>', 'biggest move · ' + hhmm(biggest.close_mt) + ' MT']
+].map(([v, l]) => '<div class="tile"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+
+// shared x positions
+const W = 960, PL = 62, PR = 12;
+const xs = DATA.map((_, i) => PL + (i / (DATA.length - 1)) * (W - PL - PR));
+
+// day boundary + hour ticks (every 4h)
+function xAxisMarks() {
+  const marks = [];
+  for (let i = 0; i < DATA.length; i++) {
+    const t = DATA[i].close_mt;
+    if (t.slice(14) === '00' && Number(t.slice(11, 13)) % 4 === 0) marks.push([i, hhmm(t), t.slice(11) === '00:00']);
+  }
+  return marks;
+}
+
+// ---- settlement path ----
+(function () {
+  const H = 240, PT = 12, PB = 26;
+  const vals = DATA.map((d) => d.settle);
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  const y = (v) => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
+  let s = '';
+  // gridlines: 4 nice levels
+  const step = Math.ceil((hi - lo) / 4 / 250) * 250;
+  const g0 = Math.ceil(lo / step) * step;
+  for (let v = g0; v <= hi; v += step) {
+    s += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)" stroke-width="1"/>';
+    s += '<text x="' + (PL - 6) + '" y="' + (y(v) + 3.5) + '" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Chivo Mono,monospace">' + (v / 1000).toFixed(1) + 'k</text>';
+  }
+  s += '<polyline fill="none" stroke="var(--path)" stroke-width="1.6" points="' +
+    DATA.map((d, i) => xs[i] + ',' + y(d.settle)).join(' ') + '"/>';
+  DATA.forEach((d, i) => {
+    s += '<circle cx="' + xs[i] + '" cy="' + y(d.settle) + '" r="3.4" fill="var(--' + (d.result === 'yes' ? 'yes' : 'no') + ')" stroke="var(--surface)" stroke-width="1.2" data-i="' + i + '"/>';
+  });
+  for (const [i, label, isMidnight] of xAxisMarks()) {
+    s += '<text x="' + xs[i] + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Chivo Mono,monospace">' + (isMidnight ? dd(DATA[i].close_mt) : label) + '</text>';
+    if (isMidnight) s += '<line x1="' + xs[i] + '" x2="' + xs[i] + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>';
+  }
+  $('path').innerHTML = s;
+})();
+
+// ---- margin bars ----
+(function () {
+  const H = 200, PT = 10, PB = 26;
+  const maxAbs = Math.max(...margins.map(Math.abs));
+  const y0 = PT + (H - PT - PB) / 2;
+  const scale = (H - PT - PB) / 2 / maxAbs;
+  const bw = Math.max(3, (W - PL - PR) / DATA.length - 2);
+  let s = '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--muted)" stroke-width="1"/>';
+  for (const v of [maxAbs, -maxAbs, maxAbs / 2, -maxAbs / 2]) {
+    const yy = y0 - v * scale;
+    s += '<text x="' + (PL - 6) + '" y="' + (yy + 3.5) + '" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Chivo Mono,monospace">' + (v > 0 ? '+' : '') + Math.round(v) + '</text>';
+  }
+  margins.forEach((m, i) => {
+    const h = Math.max(1.5, Math.abs(m) * scale);
+    const yy = m >= 0 ? y0 - h : y0;
+    s += '<rect x="' + (xs[i] - bw / 2) + '" y="' + yy + '" width="' + bw + '" height="' + h + '" rx="1.5" fill="var(--' + (DATA[i].result === 'yes' ? 'yes' : 'no') + ')" data-i="' + i + '"/>';
+  });
+  for (const [i, label, isMidnight] of xAxisMarks()) {
+    s += '<text x="' + xs[i] + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Chivo Mono,monospace">' + (isMidnight ? dd(DATA[i].close_mt) : label) + '</text>';
+  }
+  $('bars').innerHTML = s;
+})();
+
+// tooltips
+const tt = $('tt');
+document.querySelectorAll('[data-i]').forEach((el) => {
+  el.addEventListener('mousemove', (e) => {
+    const d = DATA[Number(el.dataset.i)];
+    const m = d.settle - d.strike;
+    tt.style.display = 'block';
+    tt.textContent = d.close_mt + ' MT · strike ' + fmt$(d.strike) + ' → settle ' + fmt$(d.settle) +
+      ' (' + (m >= 0 ? '+' : '') + m.toFixed(2) + ', ' + d.result.toUpperCase() + ')';
+    tt.style.left = Math.min(e.clientX + 12, innerWidth - 330) + 'px';
+    tt.style.top = (e.clientY - 34) + 'px';
+  });
+  el.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+});
+
+// table
+$('tbl').innerHTML = '<tr><th>close (MT)</th><th style="text-align:right">strike</th><th style="text-align:right">settle</th><th style="text-align:right">margin</th><th>result</th></tr>' +
+  [...DATA].reverse().map((d) => {
+    const m = d.settle - d.strike;
+    return '<tr><td class="mono">' + d.close_mt + '</td><td class="num mono">' + fmt$(d.strike) + '</td><td class="num mono">' + fmt$(d.settle) +
+      '</td><td class="num mono">' + (m >= 0 ? '+' : '') + m.toFixed(2) + '</td><td><span class="' + d.result + '">' + d.result.toUpperCase() + '</span></td></tr>';
+  }).join('');
+
+$('foot').textContent = 'Strike = official 60s BRTI average at window open (equals the previous window’s settlement — the chain is exact). Settle = same average at close, rounded to 2dp; ties resolve YES. Data: Kalshi settled-market records. Temporary board generated ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC; ask to refresh or retire it.';
+</script>

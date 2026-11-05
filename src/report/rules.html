@@ -1,0 +1,124 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desk Rules</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]})"></script>
+<style>
+  :root {
+    --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+    --accent: #D9A13B; --path: #6B93B8; --yes: #4CAF7D; --no: #D4574E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 18px 16px 56px; }
+  .mono { font-family: "Chivo Mono", ui-monospace, monospace; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; margin-bottom: 4px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0; }
+  h1 .a { color: var(--accent); }
+  nav a { color: var(--muted); font-size: 13px; text-decoration: none; margin-right: 12px; }
+  nav a.cur { color: var(--accent); font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 16px; max-width: 76ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--path); border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; overflow-x: auto; }
+  .card.taker { border-left-color: var(--no); }
+  .card.maker { border-left-color: var(--yes); }
+  .card h2 { margin: 0 0 2px; font-size: 16px; }
+  .card h2 .mono { color: var(--accent); }
+  .tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+  .card p { font-size: 13.5px; color: var(--muted); margin: 8px 0; max-width: 78ch; }
+  .card p b { color: var(--ink); }
+  .katex { font-size: 1.02em; }
+  .katex-display { margin: 8px 0; }
+  .shared { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 14px 18px; margin: 18px 0; overflow-x: auto; }
+  .shared h2 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .shared p { font-size: 13.5px; color: var(--muted); margin: 6px 0; }
+  ul { font-size: 13.5px; color: var(--muted); margin: 6px 0; padding-left: 20px; }
+  li b { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    body { font-size: 14px; }
+    .wrap { padding: 12px 10px 40px; }
+    h1 { font-size: 19px; }
+    h2 { margin: 20px 0 7px; }
+    .hero { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .tile { padding: 9px 11px; }
+    .tile .v { font-size: 18px; } .tile .v.big { font-size: 21px; }
+    table { font-size: 11.5px; }
+    th, td { padding: 4.5px 7px; }
+    .chip { padding: 4px 10px; font-size: 11.5px; }
+    .katex { font-size: 0.92em; }
+    .card, .panel, .math-panel, .shared { padding: 10px 12px; }
+  }
+</style></head><body>
+<div class="wrap">
+  <header>
+    <h1>Desk <span class="a">Rules</span></h1>
+    <nav><a href="/">Signal Room</a><a href="/paper">Paper Desk</a><a href="/rules" class="cur">Rules</a></nav>
+  </header>
+  <p class="sub">Every strategy the paper engine runs: its hypothesis, its exact trigger, how fills are simulated, and the mathematics. All parameters are hypotheses under test, not calibrated truths. Everything is simulated — no real orders exist anywhere in this system.</p>
+
+  <div class="shared">
+    <h2>Shared machinery</h2>
+    <p><b>Analytic fair value (BTC).</b> Settlement is the mean of the index over the final \(D=60\) s. For a driftless diffusion with per-second volatility \(\sigma\), seen \(\tau\) seconds from close:</p>
+    $$\tau_{\text{eff}}=\tau-\tfrac{2D}{3},\qquad z=\frac{\ln(S_t/K)}{\hat\sigma\sqrt{\tau_{\text{eff}}}},\qquad \text{fair}=\Phi(z),\qquad \hat\sigma^2=\frac{1}{n}\sum_i \frac{(\Delta\ln p_i)^2}{\Delta t_i}\ \text{(trailing 30 min)}$$
+    <p><b>Anchored fair value (alts).</b> Each alt's Pyth feed carries a level basis vs the CF settlement index — but the strike \(K\) <i>is</i> the official index at window open, so anchoring to the feed's own 60-second pre-open average \(A\) cancels the basis exactly:</p>
+    $$z_{\text{alt}}=\frac{\ln(P_t/A)}{\hat\sigma_{\text{alt}}\sqrt{\tau_{\text{eff}}}},\qquad A=\frac{1}{60}\sum_{s=o-60}^{o-1}P_s$$
+    <p><b>Kalshi taker fee</b> (makers pay zero): \( \text{fee}=\lceil 7\,C\,P(1-P)\rceil\ \text{cents per order} \).</p>
+    <p><b>Sizing & risk, per strategy book ($100 each):</b> stake \(=\min(\$5,\ 5\%\times\text{book cash})\); max 6 open positions; no entries in the final 120 s; entries stop below $70 book equity or if <span class="mono">.paper-stop</span> exists; every position holds to settlement (P&L \(=\) contracts \(\times\mathbf 1[\text{win}]-\) cost).</p>
+  </div>
+
+  <div class="card taker">
+    <span class="tag">taker · BTC · tests the dislocation thesis</span>
+    <h2><span class="mono">fade</span> — take the cheap side when model and market disagree</h2>
+    <p><b>Hypothesis:</b> the book sometimes lags the index by whole seconds (the project's founding observation). <b>Trigger:</b> \(|\Phi(z)-\text{mid}|\ge 0.05\) sustained for 3 consecutive seconds. <b>Action:</b> buy the model-favored side at the live best ask (YES) or \(1-\)bid (NO), taker fee included. <b>Prediction from research:</b> ≈flat-to-negative — three prior studies found the quote efficient at coarse granularity; this tests the seconds-scale version.</p>
+  </div>
+
+  <div class="card taker">
+    <span class="tag">taker · BTC · controlled experiment vs fade</span>
+    <h2><span class="mono">mcfade</span> — same trigger, Monte Carlo fair value</h2>
+    <p>Identical to <span class="mono">fade</span> in every respect except the model: fair value comes from a block bootstrap of the trailing 30 minutes of <b>de-meaned</b> empirical 1-second returns (fat tails and clustering preserved, drift removed — a fair value is a martingale quantity), \(N=1500\) paths, each scoring the exact 60-second settlement average:</p>
+    $$\widehat P_{\mathrm{MC}}=\frac{1}{N}\sum_{j=1}^{N}\mathbf 1\!\left[\tfrac1D\textstyle\sum_{s=c-D}^{c-1}S^{(j)}_s\ge K\right]$$
+    <p>Any performance difference vs <span class="mono">fade</span> is attributable purely to the model, since triggers, sizing, and fills are identical.</p>
+  </div>
+
+  <div class="card maker">
+    <span class="tag">maker · BTC · tests zero-fee spread capture</span>
+    <h2><span class="mono">maker</span> — rest bids behind the fair/mid blend</h2>
+    <p><b>Hypothesis:</b> maker fills pay no fee on these series, and every negative research result came from taker costs — resting orders may harvest the spread. <b>Quotes:</b></p>
+    $$b_{\text{YES}}=\big\lfloor(\min(\Phi(z),\text{mid})-0.03)\big\rfloor_{0.01},\qquad b_{\text{NO}}=\big\lfloor(\min(1-\Phi(z),1-\text{mid})-0.03)\big\rfloor_{0.01}$$
+    <p>A side is not quoted at all if its raw value is under 2¢ (near-certain markets otherwise become adverse-selection donations — audit finding). <b>Fill rule (conservative):</b> a resting order fills only when a real captured trade prints <b>strictly through</b> its price — touches never fill, because queue priority is unknowable. Quotes cancel in the final 120 s.</p>
+  </div>
+
+  <div class="card taker">
+    <span class="tag">taker · 6 alt coins · tests the lead-lag theory</span>
+    <h2><span class="mono">lag</span> — chase alt contracts after a dramatic BTC move</h2>
+    <p><b>Hypothesis (Eduardo's):</b> BTC leads, alts follow with a lag, and alt contract quotes are sticky. <b>Trigger:</b> BTC's 2-minute move \(|\Delta_{2m}|\ge 20\) bps, where \(\Delta_{2m}=\ln(S_t/S_{t-120})\times 10^4\). <b>Action:</b> buy the BTC-direction side of every active alt window (ETH, SOL, XRP, DOGE, BNB, HYPE) at the ask — unless that side is already priced ≥ 80¢ (nothing left to chase). One position per alt window.</p>
+  </div>
+
+  <div class="card maker">
+    <span class="tag">maker · 6 alt coins · control arm</span>
+    <h2><span class="mono">altmaker</span> — model-free quoting on alt books</h2>
+    <p>Rests both sides \(0.03\) behind the alt's own <b>mid only</b> — no model at all. Same floor-rounding, 2¢ minimum, strictly-through fill rule, and cutoff as <span class="mono">maker</span>. <b>Role:</b> the control arm — pure spread capture with maximum adverse-selection exposure. If <span class="mono">altmakerfv</span> beats it, the model earns its keep; if neither survives, alt spread capture is dead.</p>
+  </div>
+
+  <div class="card taker">
+    <span class="tag">taker · 6 alt coins · dislocation thesis on alts</span>
+    <h2><span class="mono">altfade</span> — fade with the anchored alt fair value</h2>
+    <p>The <span class="mono">fade</span> rule applied to each alt: trigger \(|\Phi(z_{\text{alt}})-\text{mid}|\ge 0.05\) for 3 s using the anchored fair value above, \(\hat\sigma_{\text{alt}}\) from the alt's own trailing 30-minute Pyth returns. Alt books are thinner than BTC's — if stickiness exists anywhere at seconds scale, it should show here first.</p>
+  </div>
+
+  <div class="card maker">
+    <span class="tag">maker · 6 alt coins · treatment arm</span>
+    <h2><span class="mono">altmakerfv</span> — alt quoting with the model in the blend</h2>
+    <p>Identical to <span class="mono">altmaker</span> except quotes blend the anchored fair value: \(b_{\text{YES}}=\lfloor\min(\Phi(z_{\text{alt}}),\text{mid})-0.03\rfloor\), and symmetrically for NO. The blend pulls quotes away from the market on the side the model distrusts — the A/B against <span class="mono">altmaker</span> isolates exactly what the model contributes to spread capture.</p>
+  </div>
+
+  <div class="shared">
+    <h2>How verdicts are reached</h2>
+    <p>Each book's settled P&L feeds the Monte Carlo panel on the Paper Desk: a 2,000-resample bootstrap gives the 90% CI on EV/trade, and 2,000 simulated fourteen-day futures (drawing from the strategy's own P&L history at its observed trade rate) give P(survive the $70 stop) and P(end profitable). A strategy graduates only if it survives ≥2 weeks with a positive-EV confidence interval — and even then, the next step is a conversation, not an order.</p>
+  </div>
+</div>
+</body></html>

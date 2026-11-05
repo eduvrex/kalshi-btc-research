@@ -1,0 +1,40 @@
+{
+  "kalshi_state": "LIVE",
+  "kalshi_pill": "ok",
+  "kalshi_desc": "Order-book collector live across ~250 markets: 1-second book snapshots + full depth deltas + trades. The morning network block ended; a REST backfill is recovering the blocked window’s trades.",
+  "spot_desc": "Coinbase and Kraken trade history → 1-second bars, both legs running and unaffected by the Kalshi block.",
+  "events_desc": "The ledger is accumulating on clean, validated inputs (proxy ±$4 vs official settlements) since ~11:05 MT. Events are raw candidates; the events→outcomes join after a few days of accumulation is the direct test of the second-scale dislocation thesis.",
+  "findings": [
+    {
+      "cls": "dead",
+      "tag": "Refuted",
+      "text": "<b>The commodity cheap-tail claim.</b> Gold/silver/WTI contracts at ≤15¢ with 2–5 min left resolve exactly as often as priced — flat per-market, −24% to −39% on risk after fees. 12,000 markets, 162k observations."
+    },
+    {
+      "cls": "dead",
+      "tag": "Artifact",
+      "text": "<b>BTC dip-overshoot (+4.7z) died at the fill level.</b> At the first tradeable touch the market is exactly right (6.8¢ cost, 6.7% win rate); the gap only existed against an average quote no order can obtain."
+    },
+    {
+      "cls": "dead",
+      "tag": "Refuted",
+      "text": "<b>The market already prices the path.</b> Conditional calibration by path state (20 cells, 25k observations): no cell deviates significantly — quoted ≈ realized everywhere. Trading empirical-vs-market disagreements out of sample: −9% to −12% on risk, t ≈ −4.4, at every threshold. When the similar-windows lookup disagrees with the quote, the quote is right."
+    },
+    {
+      "cls": "dead",
+      "tag": "Refuted",
+      "text": "<b>The minute-scale version of the founding observation.</b> The state is real — index above strike with the market below 50¢ happens in 4.3% of minutes — but when it happens, <b>the book is right</b>: realized outcomes track the quoted mid, not the index model, in every credible z-bucket (90 days, 82,669 rows). No manipulation-decay signature (fresh spikes settle like drifts: 50.0% vs 46.1%, CIs overlap), the market's mid out-forecasts the model (Brier 0.1631 vs 0.1663), and the fill-level threshold sweep is flat after fees. Four independent studies now agree: efficient at ≥1-minute granularity."
+    },
+    {
+      "cls": "open",
+      "tag": "Testing",
+      "text": "<b>Cross-crypto lead-lag (BTC leads, alt quotes sticky).</b> Six alt 15-min series (ETH, SOL, XRP, DOGE, BNB, HYPE) now in live book + 1s spot capture; 90-day histories backfilling. Coarse test: alt quotes conditioned on BTC's prior-2-min move, plus a fill-level backtest with BTC as placebo — runs the moment candles land. The seconds-scale version follows from live capture."
+    },
+    {
+      "cls": "open",
+      "tag": "Open",
+      "text": "<b>What remains: seconds.</b> Every refutation used 1-minute data; dislocations lasting 3–30 seconds are structurally invisible to all of it. The live book capture, dislocation ledger, and paper desk are the only instruments that can see there — they accumulate the answer continuously."
+    }
+  ],
+  "foot": "Reports live in <span class=\"mono\">reports/</span>. This page is a static snapshot built by scripts/build-dashboard.js from scripts/dashboard-data.js output."
+}

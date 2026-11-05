@@ -1,0 +1,266 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+    --accent: #D9A13B; --path: #6B93B8; --yes: #4CAF7D; --no: #D4574E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 15px; line-height: 1.45; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 18px 14px 44px; }
+  .mono { font-family: "Chivo Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0; }
+  h1 .a { color: var(--accent); }
+  nav a { color: var(--muted); font-size: 13px; text-decoration: none; margin-right: 12px; }
+  nav a.cur { color: var(--accent); font-weight: 600; }
+  .banner { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 9px 13px; font-size: 12.5px; color: var(--muted); margin: 12px 0 4px; }
+  .banner b { color: var(--accent); }
+  h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 24px 0 8px; display: flex; align-items: center; gap: 10px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; }
+  .tile .v { font-size: 22px; font-weight: 600; }
+  .tile .l { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .yes { color: var(--yes); } .no { color: var(--no); } .acc { color: var(--accent); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+  td { padding: 5px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.num { text-align: right; }
+  tr:last-child td { border-bottom: none; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+  svg { width: 100%; height: auto; display: block; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 78ch; }
+
+  @media (max-width: 560px) {
+    body { font-size: 14px; }
+    .wrap { padding: 12px 10px 40px; }
+    h1 { font-size: 19px; }
+    h2 { margin: 20px 0 7px; }
+    .hero { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .tile { padding: 9px 11px; }
+    .tile .v { font-size: 18px; } .tile .v.big { font-size: 21px; }
+    table { font-size: 11.5px; }
+    th, td { padding: 4.5px 7px; }
+    .chip { padding: 4px 10px; font-size: 11.5px; }
+    .katex { font-size: 0.92em; }
+    .card, .panel, .math-panel, .shared { padding: 10px 12px; }
+  }
+</style></head><body>
+<div class="wrap">
+  <header>
+    <h1>Paper <span class="a">Desk</span></h1>
+    <nav><a href="/">Signal Room</a><a href="/paper" class="cur">Paper Desk</a><a href="/rules">Rules</a></nav>
+    <span style="color:var(--muted);font-size:12.5px" id="stamp"></span>
+  </header>
+  <div class="banner"><b>SIMULATED — no real orders exist.</b> Autonomous engine, seven strategies each with an independent virtual $100 book ($700 total baseline), decisions every second against the live captured order books. Maker fills require a real trade to print strictly through the resting price. Per-book entries pause below $70 or if <span class="mono">.paper-stop</span> exists. This is Phase 4.5 of the project plan: strategies must survive ≥2 weeks here before live trading is even a conversation.</div>
+
+  <h2>Live signals — what each strategy would do right now</h2>
+  <div class="panel">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Straight from the engine, every second. These are the desk's own simulated paper decisions — nothing in this project places orders. At ~$1–2 position sizes note the 1¢ per-order minimum fee runs 1–2% extra vs the amortised figures used everywhere here.</div>
+    <table id="signals"></table>
+  </div>
+
+  <h2>Bankroll</h2>
+  <div class="hero" id="hero"></div>
+
+  <h2>Open positions — live</h2>
+  <div class="panel"><table id="openpos"></table></div>
+
+  <h2>Equity curve — seven books, $700 baseline</h2>
+  <div class="panel"><svg id="curve" viewBox="0 0 960 180"></svg></div>
+
+  <h2>Strategies — with Monte Carlo verdicts</h2>
+  <div class="panel">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">EV/trade CI = 90% bootstrap interval (2,000 resamples of that strategy's settled P&L). Survival columns simulate 2,000 fourteen-day futures at the observed trade rate, drawing P&L from the strategy's own history: P(book stays above the $70 stop) and P(book ends above $100). MC verdicts appear once a strategy has ≥10 settled trades.</div>
+    <table id="stats"></table>
+  </div>
+
+  <h2>Trades (latest 40, MT)</h2>
+  <div class="panel"><table id="trades"></table></div>
+
+  <p class="note">Strategy "fade" takes the cheap side at the real ask (taker fees included) when model fair and the book disagree ≥5¢ for 3s — the live test of the dislocation thesis; research predicts ≈flat-to-negative. Strategy "maker" rests bids 3¢ behind the fair/mid blend and pays zero fees — the one structural edge every taker study left untouched. All parameters are hypotheses, not calibrated truths; the desk exists to measure them.</p>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const money = (v) => (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2);
+const cts = (v) => (v * 100).toFixed(1) + '¢';
+const coin = (tk) => (tk.match(/^KX([A-Z]+)15M/) || [,'?'])[1];
+const winOf = (tk) => { const m = tk.match(/(\d{2})(\d{2})-\d+$/); return m ? m[1] + ':' + m[2] : tk.slice(-7); };
+let positions = [];
+function renderOpenPos() {
+  const fmtpct = (v, base) => base > 0 ? ((v / base) * 100).toFixed(1) + '%' : '—';
+  if (positions.length) {
+    let rows = '';
+    let curStrat = null, subV = 0, subC = 0, totV = 0, totC = 0;
+    const subRow = () => '<tr style="background:var(--surface2)"><td colspan="6" style="font-weight:600">' + curStrat + ' subtotal</td>' +
+      '<td class="num mono">' + money(subC) + '</td><td class="num mono">' + money(subV) + '</td>' +
+      '<td class="num mono ' + (subV - subC >= 0 ? 'yes' : 'no') + '">' + (subV - subC >= 0 ? '+' : '') + money(subV - subC).replace('$−','−$') + '</td>' +
+      '<td class="num mono ' + (subV - subC >= 0 ? 'yes' : 'no') + '">' + fmtpct(subV - subC, subC) + '</td></tr>';
+    for (const t of positions) {
+      if (curStrat !== null && t.strategy !== curStrat) { rows += subRow(); subV = 0; subC = 0; }
+      curStrat = t.strategy;
+      subV += t.value; subC += t.cost; totV += t.value; totC += t.cost;
+      const up = t.upnl >= 0;
+      const mm = Math.max(0, Math.floor((t.secs_to_close || 0) / 60));
+      rows += '<tr><td>' + t.strategy + '</td>' +
+        '<td class="' + t.side + '" style="font-weight:600">' + t.side.toUpperCase() + ' ' + coin(t.market_ticker) + '</td>' +
+        '<td class="mono">' + winOf(t.market_ticker) + ' ET</td>' +
+        '<td class="num mono">' + cts(t.entry) + '</td>' +
+        '<td class="num mono">' + (t.px_now === null ? '—' : cts(t.px_now)) + '</td>' +
+        '<td class="num mono">' + t.contracts.toFixed(1) + ' · ' + mm + 'm left</td>' +
+        '<td class="num mono">' + money(t.cost) + '</td>' +
+        '<td class="num mono">' + money(t.value) + '</td>' +
+        '<td class="num mono ' + (up ? 'yes' : 'no') + '">' + (up ? '+' : '') + money(t.upnl).replace('$−','−$') + '</td>' +
+        '<td class="num mono ' + (up ? 'yes' : 'no') + '">' + fmtpct(t.upnl, t.cost) + '</td></tr>';
+    }
+    rows += subRow();
+    rows += '<tr style="border-top:2px solid var(--line)"><td colspan="6" style="font-weight:700">TOTAL</td>' +
+      '<td class="num mono" style="font-weight:600">' + money(totC) + '</td><td class="num mono" style="font-weight:600">' + money(totV) + '</td>' +
+      '<td class="num mono ' + (totV - totC >= 0 ? 'yes' : 'no') + '" style="font-weight:700">' + (totV - totC >= 0 ? '+' : '') + money(totV - totC).replace('$−','−$') + '</td>' +
+      '<td class="num mono ' + (totV - totC >= 0 ? 'yes' : 'no') + '" style="font-weight:700">' + fmtpct(totV - totC, totC) + '</td></tr>';
+    document.getElementById('openpos').innerHTML =
+      '<tr><th>strategy</th><th>position</th><th>window</th><th style="text-align:right">entry</th><th style="text-align:right">now</th><th style="text-align:right">size</th><th style="text-align:right">cost</th><th style="text-align:right">value</th><th style="text-align:right">P&L</th><th style="text-align:right">chg</th></tr>' + rows;
+  } else {
+    document.getElementById('openpos').innerHTML = '<tr><td style="color:var(--muted)">no open positions</td></tr>';
+  }
+}
+
+// Sub-second marks: the collector streams top-of-book changes over SSE; we
+// re-mark matching open positions instantly and re-render.
+let es = null;
+function startStream() {
+  es = new EventSource('/api/stream');
+  es.onmessage = (ev) => {
+    let chunk;
+    try { chunk = JSON.parse(ev.data); } catch (e) { return; }
+    if (chunk && chunk.__signals) {
+      const sgl = chunk.__signals;
+      const order = ['fade','mcfade','maker','lag','altfade','altmaker','altmakerfv'];
+      const el = document.getElementById('signals');
+      if (el) el.innerHTML = '<tr><th>strategy</th><th>state</th><th>detail</th></tr>' +
+        order.map((k) => {
+          const v = sgl[k];
+          const st = v ? v.state : '—';
+          const cls = st === 'TRIGGERED' ? 'no' : st === 'QUOTING' ? 'yes' : '';
+          return '<tr><td class="mono">' + k + '</td><td class="' + cls + '" style="font-weight:600">' + st + '</td>' +
+            '<td style="color:var(--muted);white-space:normal">' + (v ? v.detail : '') + '</td></tr>';
+        }).join('');
+      return;
+    }
+    let touched = false;
+    for (const u of chunk) {
+      if (u.b === null || u.a === null) continue;
+      const mid = (u.b + u.a) / 2;
+      for (const t of positions) {
+        if (t.market_ticker !== u.t) continue;
+        t.px_now = t.side === 'yes' ? mid : 1 - mid;
+        t.value = t.contracts * t.px_now;
+        t.upnl = t.value - t.cost;
+        touched = true;
+      }
+    }
+    if (touched) renderOpenPos();
+  };
+  es.onerror = () => { es.close(); setTimeout(startStream, 3000); };
+}
+startStream();
+
+async function load() {
+  let d;
+  try { d = await (await fetch('/api/paper')).json(); } catch (e) { $('stamp').textContent = 'server unreachable'; return; }
+  $('stamp').textContent = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Denver' }) + ' MT' + (d.now.stopped ? ' · ENTRIES STOPPED (.paper-stop)' : '');
+
+  const sigOrder = ['fade','mcfade','maker','lag','altfade','altmaker','altmakerfv'];
+  const sg = (d.signals && d.signals.data) || {};
+  const sigAge = d.signals && d.signals.at ? Math.round((Date.now() - d.signals.at) / 1000) : null;
+  $('signals').innerHTML = '<tr><th>strategy</th><th>state</th><th>detail</th></tr>' +
+    sigOrder.map((k) => {
+      const v = sg[k];
+      const st = v ? v.state : '—';
+      const cls = st === 'TRIGGERED' ? 'no' : st === 'QUOTING' ? 'yes' : '';
+      return '<tr><td class="mono">' + k + '</td><td class="' + cls + '" style="font-weight:600">' + st + '</td>' +
+        '<td style="color:var(--muted);white-space:normal">' + (v ? v.detail : 'engine warming up') + '</td></tr>';
+    }).join('') +
+    (sigAge !== null && sigAge > 10 ? '<tr><td colspan="3" class="no">signals stale ' + sigAge + 's — engine or stream down</td></tr>' : '');
+
+  const BASE = 700;
+  const settledPnl = d.stats.reduce((s, x) => s + x.pnl, 0);
+  const openCost = d.open.reduce((s, t) => s + t.cost, 0);
+  const obs = d.openByStrategy || {};
+  const openMarkTotal = Object.values(obs).reduce((s, x) => s + x.mark, 0);
+  $('hero').innerHTML = [
+    ['<span class="' + (d.now.equity >= BASE ? 'yes' : 'no') + '">' + money(d.now.equity) + '</span>', 'equity across 7 books (cash + marked)'],
+    [(settledPnl >= 0 ? '<span class="yes">+' : '<span class="no">') + money(settledPnl).replace('$-', '$') + '</span>', 'settled P&L'],
+    [d.open.length + ' <span style="font-size:13px;color:var(--muted)">(' + money(openMarkTotal) + ' marked / ' + money(openCost) + ' cost)</span>', 'open positions — live value'],
+    [d.trades.length ? d.trades[0].ts_mt : '—', 'last activity']
+  ].map(([v, l]) => '<div class="tile"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+
+  // open positions table, grouped by strategy with subtotals.
+  // Rendered from the global `positions` store so the SSE book stream can
+  // re-render marks sub-second without waiting for the next poll.
+  positions = d.open;
+  renderOpenPos();
+
+
+  // equity curve
+  const eq = d.equity;
+  if (eq.length > 1) {
+    const W = 960, H = 180, PL = 46, PR = 8, PT = 10, PB = 18;
+    const lo = Math.min(BASE, ...eq.map((e) => e.equity)) - 1;
+    const hi = Math.max(BASE, ...eq.map((e) => e.equity)) + 1;
+    const x = (i) => PL + i / (eq.length - 1) * (W - PL - PR);
+    const y = (v) => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
+    let s = '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y(BASE) + '" y2="' + y(BASE) + '" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>' +
+      '<text x="' + (PL - 6) + '" y="' + (y(BASE) + 3.5) + '" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Chivo Mono,monospace">$' + BASE + '</text>';
+    s += '<polyline fill="none" stroke="var(--accent)" stroke-width="1.8" points="' + eq.map((e, i) => x(i) + ',' + y(e.equity)).join(' ') + '"/>';
+    const last = eq[eq.length - 1];
+    s += '<circle cx="' + x(eq.length - 1) + '" cy="' + y(last.equity) + '" r="3.5" fill="var(--accent)"/>';
+    $('curve').innerHTML = s;
+  } else {
+    $('curve').innerHTML = '<text x="480" y="90" text-anchor="middle" font-size="13" fill="var(--muted)">equity history accumulates once the engine has run for a few minutes</text>';
+  }
+
+  $('stats').innerHTML = '<tr><th>strategy</th><th style="text-align:right">entries</th><th style="text-align:right">settled</th><th style="text-align:right">wins</th><th style="text-align:right">settled P&L</th><th style="text-align:right">open (marked)</th><th style="text-align:right">book equity</th><th style="text-align:right">EV/trade (90% CI)</th><th style="text-align:right">trades/day</th><th style="text-align:right">P(survive 14d)</th><th style="text-align:right">P(profit 14d)</th></tr>' +
+    (d.stats.length ? d.stats.map((s) => {
+      const m = (d.mc || {})[s.strategy];
+      const mcCells = m && m.ready
+        ? '<td class="num mono ' + (m.ev >= 0 ? 'yes' : 'no') + '">' + money(m.ev) + ' <span style="color:var(--muted)">[' + money(m.ci_lo) + ', ' + money(m.ci_hi) + ']</span></td>' +
+          '<td class="num mono">' + m.trades_per_day.toFixed(1) + '</td>' +
+          '<td class="num mono">' + (m.p_survive_14d * 100).toFixed(0) + '%</td>' +
+          '<td class="num mono ' + (m.p_profit_14d >= 0.5 ? 'yes' : 'no') + '">' + (m.p_profit_14d * 100).toFixed(0) + '%</td>'
+        : '<td class="num mono" colspan="4" style="color:var(--muted)">accumulating (n=' + (m ? m.n : s.settled) + ' of 10)</td>';
+      const ob = obs[s.strategy] || { n: 0, cost: 0, mark: 0 };
+      const bookEq = 100 + s.pnl + (ob.mark - ob.cost) - 0;
+      const openCell = ob.n ? money(ob.mark) + ' <span style="color:var(--muted)">(' + ob.n + ')</span>' : '—';
+      return '<tr><td>' + s.strategy + '</td><td class="num mono">' + s.n + '</td><td class="num mono">' + s.settled +
+        '</td><td class="num mono">' + s.wins + '</td><td class="num mono ' + (s.pnl >= 0 ? 'yes' : 'no') + '">' + money(s.pnl) + '</td>' +
+        '<td class="num mono">' + openCell + '</td>' +
+        '<td class="num mono ' + (bookEq >= 100 ? 'yes' : 'no') + '">' + money(bookEq) + '</td>' + mcCells + '</tr>';
+    }).join('')
+      : '<tr><td colspan="11" style="color:var(--muted)">no entries yet — the engine waits for its trigger conditions</td></tr>');
+
+  $('trades').innerHTML = '<tr><th>time</th><th>strategy</th><th>position</th><th>window</th><th style="text-align:right">px</th><th style="text-align:right">×</th><th style="text-align:right">cost</th><th style="text-align:right">fair@entry</th><th>status</th><th style="text-align:right">P&L</th></tr>' +
+    (d.trades.length ? d.trades.map((t) =>
+      '<tr><td class="mono">' + t.ts_mt + '</td><td>' + t.strategy + '/' + t.role + '</td>' +
+      '<td class="' + t.side + '" style="font-weight:600">' + t.side.toUpperCase() + ' ' + coin(t.market_ticker) + '</td>' +
+      '<td class="mono">' + winOf(t.market_ticker) + '</td><td class="num mono">' + cts(t.price) + '</td><td class="num mono">' + t.contracts.toFixed(1) +
+      '</td><td class="num mono">' + money(t.cost) + '</td><td class="num mono">' + (t.fair === null ? '—' : cts(t.fair)) + '</td>' +
+      '<td>' + (t.status === 'open' ? '<span class="acc">open</span>' : t.result.toUpperCase()) + '</td>' +
+      '<td class="num mono ' + (t.pnl === null ? '' : t.pnl >= 0 ? 'yes' : 'no') + '">' + (t.pnl === null ? '—' : money(t.pnl)) + '</td></tr>').join('')
+      : '<tr><td colspan="10" style="color:var(--muted)">none yet</td></tr>');
+}
+let busy = false;
+async function loadGuarded() {
+  if (busy || document.hidden) return;
+  busy = true;
+  try { await load(); } finally { busy = false; }
+}
+load().catch(() => {});
+setInterval(loadGuarded, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadGuarded(); });
+</script>
+</body></html>

@@ -1,0 +1,28 @@
+{
+  "name": "btc-kalshi-research",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Research system for Kalshi short-duration BTC prediction markets: collectors, PostgreSQL store, calibration and backtest studies, paper trading",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "backfill": "node src/backfill/backfill-kalshi.js",
+    "spot-history": "node src/backfill/download-spot-history.js",
+    "dataset": "node src/research/build-dataset.js",
+    "backtest": "node src/research/fit-and-backtest.js",
+    "calibration": "node src/research/calibration.js",
+    "calibration:conditional": "node src/research/conditional-calibration.js",
+    "monitor": "node src/research/live-dislocation-monitor.js",
+    "test": "node test/math.test.js",
+    "report": "node src/report/data-quality.js",
+    "collector:kalshi": "node src/collectors/collector-kalshi.js",
+    "collector:prices": "node src/collectors/collector-prices.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.13.1",
+    "ws": "^8.18.0"
+  }
+}

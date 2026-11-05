@@ -1,0 +1,393 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Room — Live</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #14161A; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E8EAED; --muted: #98A0AB; --line: #2A2E36;
+    --accent: #D9A13B; --path: #6B93B8;
+    --yes: #4CAF7D; --no: #D4574E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 15px; line-height: 1.45; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 18px 14px 44px; }
+  .mono { font-family: "Chivo Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; margin-bottom: 2px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0; }
+  h1 .a { color: var(--accent); }
+  .stamp { color: var(--muted); font-size: 12.5px; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--yes); margin-right: 5px; animation: pulse 2s infinite; }
+  .live-dot.stale { background: var(--no); animation: none; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 26px 0 8px; display: flex; align-items: center; gap: 10px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; }
+  .tile .v { font-size: 22px; font-weight: 600; }
+  .tile .v.big { font-size: 26px; }
+  .tile .l { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .yes { color: var(--yes); } .no { color: var(--no); } .acc { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; color: var(--muted); }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .chip.ok b { color: var(--yes); } .chip.down b { color: var(--no); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+  td { padding: 5px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.num { text-align: right; }
+  tr:last-child td { border-bottom: none; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+  .cap { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 12px; }
+  .bar-row .lbl { width: 84px; color: var(--muted); flex-shrink: 0; }
+  .bar-row .track { flex: 1; height: 14px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-row .fill { height: 100%; background: var(--yes); border-radius: 3px; }
+  .bar-row .val { width: 110px; flex-shrink: 0; }
+  .math-panel { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 16px; margin-top: 10px; overflow-x: auto; }
+  .math-panel .t { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+  .math-panel .expl { font-size: 12.5px; color: var(--muted); margin: 6px 0; max-width: 82ch; }
+  .math-panel .sub { font-size: 12.5px; color: var(--ink); margin-top: 6px; }
+  .katex { font-size: 1.05em; }
+  .katex-display { margin: 8px 0; }
+  .strip { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
+  .strip .b { flex: 1; min-width: 2px; background: var(--path); border-radius: 2px 2px 0 0; }
+  .strip .b.hole { background: var(--no); }
+  .mstrip { display: flex; align-items: center; gap: 1.5px; height: 110px; }
+  .mstrip .m { flex: 1; min-width: 2px; border-radius: 1.5px; position: relative; }
+  .finding { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 8px; padding: 10px 13px; font-size: 13px; margin-bottom: 8px; }
+  .finding.dead { border-left-color: var(--no); } .finding.live { border-left-color: var(--accent); } .finding.open { border-left-color: var(--path); }
+  .finding .tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; margin-right: 8px; }
+  .finding.dead .tag { color: var(--no); } .finding.live .tag { color: var(--accent); } .finding.open .tag { color: var(--path); }
+  .prog { margin: 9px 0; }
+  .prog .t { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; gap: 10px; }
+  .track2 { height: 9px; background: var(--surface2); border-radius: 5px; overflow: hidden; }
+  .fill2 { height: 100%; background: var(--path); border-radius: 5px; }
+  .fill2.done { background: var(--yes); }
+  .note { color: var(--muted); font-size: 12px; margin-top: 14px; max-width: 78ch; }
+  .tt { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); padding: 4px 9px; border-radius: 5px; font-size: 12px; display: none; z-index: 10; white-space: nowrap; }
+
+  @media (max-width: 560px) {
+    body { font-size: 14px; }
+    .wrap { padding: 12px 10px 40px; }
+    h1 { font-size: 19px; }
+    h2 { margin: 20px 0 7px; }
+    .hero { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .tile { padding: 9px 11px; }
+    .tile .v { font-size: 18px; } .tile .v.big { font-size: 21px; }
+    table { font-size: 11.5px; }
+    th, td { padding: 4.5px 7px; }
+    .chip { padding: 4px 10px; font-size: 11.5px; }
+    .katex { font-size: 0.92em; }
+    .card, .panel, .math-panel, .shared { padding: 10px 12px; }
+  }
+</style></head><body>
+<div class="wrap">
+  <header>
+    <h1>Signal <span class="a">Room</span> <span class="stamp">· live</span></h1>
+    <nav style="font-size:13px"><a href="/" style="color:var(--accent);font-weight:600;text-decoration:none;margin-right:12px">Signal Room</a><a href="/paper" style="color:var(--muted);text-decoration:none;margin-right:12px">Paper Desk</a><a href="/rules" style="color:var(--muted);text-decoration:none">Rules</a></nav>
+    <span class="stamp"><span class="live-dot" id="dot"></span><span id="stamp">connecting…</span></span>
+  </header>
+  <div class="stamp" id="mkt"></div>
+
+  <h2>This window</h2>
+  <div class="hero" id="hero"></div>
+  <div class="chips" id="pathchips" style="margin-top:9px"></div>
+
+  <h2>The position — live Kalshi book vs the models</h2>
+  <div class="cols">
+    <div style="display:grid;gap:9px">
+      <div class="hero" id="poshero"></div>
+      <div class="chips" id="posgaps"></div>
+    </div>
+    <div class="panel" style="max-width:340px">
+      <div class="cap" id="ladcap">order book — top of each side</div>
+      <table id="ladder"></table>
+    </div>
+  </div>
+
+  <div class="math-panel">
+    <div class="t">The fair value</div>
+    <div class="expl">Settlement is the mean of BRTI over the final \(D=60\) s. Under a driftless diffusion with per-second volatility \(\sigma\), the variance of that mean seen from \(\tau\) seconds out is</div>
+    $$\operatorname{Var}\!\left[\tfrac{1}{D}\textstyle\int_{\tau-D}^{\tau} W_s\,ds\right]=\sigma^2\!\left(\tau-D+\tfrac{D}{3}\right)=\sigma^2\,\tau_{\text{eff}},\qquad \tau_{\text{eff}}=\tau-\tfrac{2D}{3}$$
+    <div class="expl">so the normalized distance and fair value are</div>
+    $$z_t=\frac{\ln\!\big(S_t/K\big)}{\hat\sigma\sqrt{\tau_{\text{eff}}}}\,,\qquad \widehat{P}(\text{YES})=\Phi(z_t),\qquad \hat\sigma^2=\frac{1}{n}\sum_{i=1}^{n}\frac{\big(\Delta\ln p_i\big)^2}{\Delta t_i}\ \ \text{(trailing 30 min)}$$
+    <div class="expl" style="margin-top:10px">The <b>Monte Carlo fair</b> drops the GBM assumption entirely: resample the last 30 min of empirical 1-second returns in 15-second blocks (fat tails and microstructure ride along), simulate \(N=1500\) paths to the close, and score each path's exact 60-second settlement average:</div>
+    $$\widehat{P}_{\mathrm{MC}}=\frac{1}{N}\sum_{j=1}^{N}\mathbf 1\!\left[\tfrac{1}{D}\textstyle\sum_{s=c-D}^{c-1}S_s^{(j)}\ \ge\ K\right],\qquad \operatorname{SE}=\sqrt{\widehat{P}_{\mathrm{MC}}\big(1-\widehat{P}_{\mathrm{MC}}\big)/N}$$
+    <div class="expl">When \(\widehat{P}_{\mathrm{MC}}\) and \(\Phi(z)\) disagree, the difference is the non-Gaussianity of the last half hour. Both trade side-by-side on the Paper Desk (strategies <span class="mono">fade</span> vs <span class="mono">mcfade</span>) — the desk decides which model earns its keep.</div>
+    <div class="sub mono" id="mathsub">…</div>
+  </div>
+
+  <h2>Crypto tandem — the lead-lag radar</h2>
+  <div class="panel">
+    <div class="cap">The theory under live test: BTC moves first, alts follow, alt contract quotes lag. <b>Δ2m</b> is the study's trigger variable — when BTC's turns bold, watch whether alt spots and contract mids catch up. Contracts are each coin's active 15-min window (YES mid vs its own strike).</div>
+    <table id="tandem"></table>
+  </div>
+
+  <h2>Macro tape — 15 minute moves</h2>
+  <div class="chips" id="tape"></div>
+
+  <h2>Last 24 hours — settle minus strike, per window (MT)</h2>
+  <div class="panel">
+    <div class="cap">Up bars settled YES, down bars NO. Each strike is the previous window's settlement — the chain is exact. Hover for values.</div>
+    <div class="mstrip" id="mstrip"></div>
+    <div class="cap" id="mstats" style="margin-top:8px"></div>
+  </div>
+
+  <h2>Last 8 settlements</h2>
+  <div class="panel"><table id="recent"></table></div>
+
+  <h2>The spread — time above strike vs how it settled</h2>
+  <div class="cols">
+    <div class="panel"><div class="cap" id="fullcap"></div><div id="fullbars"></div></div>
+    <div class="panel">
+      <div class="cap">Mid-window, no look-ahead: share of history settling YES given the state at each minute mark.</div>
+      <table id="prefix"></table>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:10px">
+    <div class="panel"><div class="cap">The reversal profile</div><div id="reversal" style="font-size:13.5px"></div></div>
+    <div class="panel"><div class="cap">Thin-hover effect: windows ≥12 min above, chance of NO by hover depth</div><div id="thin"></div></div>
+  </div>
+
+  <div class="math-panel">
+    <div class="t">The path statistics &amp; the similar-windows estimator</div>
+    <div class="expl">Each window's 1-second path \(p_t\) is anchored to its own pre-open minute, so venue-level basis cancels; the strike sits at the anchor by construction:</div>
+    $$a=\frac{1}{60}\sum_{s=o-60}^{o-1}p_s\,,\qquad f=\frac{1}{T}\sum_{t=o}^{c-1}\mathbf 1\!\left[p_t>a\right],\qquad w=\frac{1}{T}\sum_{t=o}^{c-1}\big(p_t-a\big)$$
+    <div class="expl">\(f\) is the fraction of time above the strike; \(w\) is the time-weighted average signed distance in dollars ("12 minutes at \$20 above" ⇒ \(f=0.8,\ w\approx+16\)). The live "similar windows" number is a banded nearest-neighbour estimate over \(N=6{,}322\) historical windows, evaluated at the last completed minute mark \(m\in\{3,6,9,12\}\):</div>
+    $$\mathcal N=\Big\{i:\ m_i=m,\ \ |f_i-f|\le 0.12,\ \ |w_i-w|\le\max\!\big(20,\ 0.6\,|w|\big)\Big\}$$
+    $$\hat p=\frac{1}{|\mathcal N|}\sum_{i\in\mathcal N}\mathbf 1\big[Y_i=\text{YES}\big]\,,\qquad \operatorname{SE}\big(\hat p\big)=\sqrt{\frac{\hat p\,(1-\hat p)}{|\mathcal N|}}$$
+    <div class="expl">It is a lookup, not a fitted model: no coefficients, no extrapolation — just how windows in the same state actually settled. Prefix rows use only seconds \(\le m\): strictly no look-ahead. Fees, for reference, follow Kalshi's schedule \( \text{fee}=\lceil 7\,C\,P(1-P)\rceil\ \text{cents per order}\).</div>
+  </div>
+
+  <h2>System</h2>
+  <div class="chips" id="sysfeeds"></div>
+  <div class="hero" id="systiles" style="margin-top:10px"></div>
+  <div class="cols" style="margin-top:10px">
+    <div class="panel"><div class="cap">Backfill — 1-minute candles</div><div id="sysbackfill"></div></div>
+    <div class="panel"><div class="cap">Capture continuity — proxy ticks per hour, last 24h (3,600 = full)</div><div class="strip" id="sysstrip"></div></div>
+  </div>
+
+  <h2>What the data has said</h2>
+  <div id="findings"></div>
+
+  <p class="note">Central research board. Live tiles refresh every 2 s from the local research database; spread and system sections every 5 min. All wall-clock times Mountain Time. Reports live in <span class="mono">reports/</span>; <span class="mono">scripts/build-dashboard.js</span> produces a static, shareable snapshot of this page.</p>
+</div>
+<div class="tt" id="tt"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const f$ = (v, d = 2) => v === null || v === undefined ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (v, d = 1) => v === null || v === undefined ? '—' : (v * 100).toFixed(d) + '%';
+const compact = (n) => { n = Number(n); if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M'; if (n >= 1e4) return Math.round(n / 1e3) + 'k'; return Number(n).toLocaleString(); };
+const TAPE_NAMES = { pyth_xau: 'Gold', pyth_xag: 'Silver', pyth_wtiv6: 'WTI (Oct fut)', pyth_btc: 'BTC (Pyth)', pm_binance: 'BTC (Binance)' };
+const tt = $('tt');
+
+let mathRendered = false;
+function renderMath() {
+  if (!mathRendered && window.renderMathInElement) {
+    renderMathInElement(document.body, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\(', right: '\\)', display: false }] });
+    mathRendered = true;
+  }
+}
+window.addEventListener('load', renderMath);
+
+async function tick() {
+  let d;
+  try { d = await (await fetch('/api/live')).json(); } catch (e) { $('stamp').textContent = 'server unreachable'; $('dot').className = 'live-dot stale'; return; }
+  const stale = d.price_age_s === null || d.price_age_s > 10;
+  $('dot').className = 'live-dot' + (stale ? ' stale' : '');
+  $('stamp').textContent = new Date(d.now).toLocaleTimeString('en-US', { timeZone: 'America/Denver' }) + ' MT' + (stale ? ' · price feed stale' : '');
+  $('mkt').textContent = d.ticker || 'no active window';
+
+  const mm = Math.floor((d.secs_left || 0) / 60), ss = String((d.secs_left || 0) % 60).padStart(2, '0');
+  const dir = d.price !== null && d.strike ? (d.price >= d.strike ? 'yes' : 'no') : '';
+  const se = d.empirical && d.empirical.p_yes !== null ? Math.sqrt(d.empirical.p_yes * (1 - d.empirical.p_yes) / d.empirical.n) : null;
+  $('hero').innerHTML = [
+    ['<span class="' + dir + '">' + f$(d.price) + '</span>', 'live index proxy' + (d.price_age_s > 3 ? ' · ' + d.price_age_s + 's old' : ''), 'big'],
+    [f$(d.strike), 'strike — the split line', ''],
+    [f$(d.running60), 'if it settled now (60s avg)', ''],
+    ['<span class="mono">' + mm + ':' + ss + '</span>', 'until settle', ''],
+    [pct(d.fair), 'fair value Φ(z)', ''],
+    [d.empirical && d.empirical.p_yes !== null ? pct(d.empirical.p_yes) + '<span style="font-size:13px;color:var(--muted)"> ±' + pct(se, 1) + '</span>' : '—',
+     d.empirical ? 'similar windows settled YES · n=' + d.empirical.n + ' @ min ' + d.empirical.mark : 'similar windows (needs 3+ min)', '']
+  ].map(([v, l, c]) => '<div class="tile"><div class="v ' + c + '">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+
+  $('pathchips').innerHTML = d.path ? [
+    'this window: <b>f = ' + d.path.frac_above.toFixed(2) + '</b> (time above)',
+    '<b>w = ' + (d.path.twad >= 0 ? '+' : '') + d.path.twad.toFixed(1) + '</b> $ (weighted distance)',
+    '<b>' + Math.round(d.path.n_secs / 60) + '</b> min observed'
+  ].map((c) => '<div class="chip">' + c + '</div>').join('') : '';
+
+  if (d.price && d.strike && d.sigma && d.z !== null) {
+    const tauEff = Math.max(d.secs_left - 40, 1);
+    $('mathsub').textContent = 'now: z = ln(' + d.price.toFixed(2) + ' / ' + d.strike.toFixed(2) + ') / (' +
+      d.sigma.toExponential(2) + ' × √' + Math.round(tauEff) + ') = ' + d.z.toFixed(2) +
+      '  ⇒  Φ(z) = ' + (d.fair * 100).toFixed(1) + '%' +
+      (d.mc_fair !== null && d.mc_fair !== undefined ? '   vs   P_MC = ' + (d.mc_fair * 100).toFixed(1) + '%' : '');
+  }
+
+  const b = d.book;
+  const cts = (v) => v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '¢';
+  if (b && b.mid !== null) {
+    $('poshero').innerHTML = [
+      ['<span class="acc">' + cts(b.mid) + '</span>', 'market YES mid · bid ' + cts(b.bid) + ' / ask ' + cts(b.ask) + (b.age_s > 5 ? ' · ' + b.age_s + 's old' : ''), 'big'],
+      [pct(d.fair), 'fair value Φ(z) — GBM', ''],
+      [d.mc_fair !== null && d.mc_fair !== undefined ? pct(d.mc_fair) + '<span style="font-size:13px;color:var(--muted)"> ±' + pct(d.mc_se, 1) + '</span>' : '—', 'Monte Carlo fair — empirical bootstrap', ''],
+      [d.empirical && d.empirical.p_yes !== null ? pct(d.empirical.p_yes) : '—', 'similar windows', '']
+    ].map(([v, l, c]) => '<div class="tile"><div class="v ' + c + '">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+    const gap = d.fair !== null ? d.fair - b.mid : null;
+    const egap = d.empirical && d.empirical.p_yes !== null ? d.empirical.p_yes - b.mid : null;
+    const gchip = (label, g) => g === null ? '' :
+      '<div class="chip">' + label + ' <b class="' + (Math.abs(g) < 0.03 ? '' : g > 0 ? 'yes' : 'no') + ' mono">' + (g >= 0 ? '+' : '') + (g * 100).toFixed(1) + '¢</b></div>';
+    $('posgaps').innerHTML =
+      gchip('fair − market', gap) + gchip('similar-windows − market', egap) +
+      '<div class="chip">depth ≤5¢ of mid: <b class="mono">' + compact(b.depth_yes || 0) + '</b> YES / <b class="mono">' + compact(b.depth_no || 0) + '</b> NO</div>' +
+      '<div class="chip">⚠ gaps are instruments, not signals — trading them tested <b class="no">−10% on risk</b> out of sample (prefix-quote study)</div>';
+    $('ladder').innerHTML = '<tr><th>side</th><th style="text-align:right">price</th><th style="text-align:right">size</th></tr>' +
+      (b.asks || []).map(([p, s]) => '<tr><td class="no">ask</td><td class="num mono">' + cts(p) + '</td><td class="num mono">' + compact(s) + '</td></tr>').join('') +
+      '<tr><td colspan="3" style="text-align:center;color:var(--muted);font-size:11px">— ' + cts(b.spread) + ' spread —</td></tr>' +
+      (b.bids || []).map(([p, s]) => '<tr><td class="yes">bid</td><td class="num mono">' + cts(p) + '</td><td class="num mono">' + compact(s) + '</td></tr>').join('');
+    $('ladcap').textContent = 'order book — top of each side (1s snapshot)';
+  } else {
+    $('poshero').innerHTML = '<div class="tile"><div class="v">—</div><div class="l">no live book (collector down or window closed)</div></div>';
+    $('posgaps').innerHTML = '';
+    $('ladder').innerHTML = '';
+  }
+
+  if (d.tandem) {
+    const SRC2SERIES = { pyth_eth: 'KXETH15M', pyth_sol: 'KXSOL15M', pyth_xrp: 'KXXRP15M', pyth_doge: 'KXDOGE15M', pyth_bnb: 'KXBNB15M', pyth_hype: 'KXHYPE15M' };
+    const COIN = { pyth_btc: 'BTC', pyth_eth: 'ETH', pyth_sol: 'SOL', pyth_xrp: 'XRP', pyth_doge: 'DOGE', pyth_bnb: 'BNB', pyth_hype: 'HYPE' };
+    const order = ['pyth_btc', 'pyth_eth', 'pyth_sol', 'pyth_xrp', 'pyth_doge', 'pyth_bnb', 'pyth_hype'];
+    const rows = order.map((src) => {
+      const s = d.tandem.spots.find((x) => x.source === src) || {};
+      const bps2 = s.last && s.m2 ? Math.log(s.last / s.m2) * 10000 : null;
+      const p15 = s.last && s.m15 ? (s.last / s.m15 - 1) * 100 : null;
+      let mid = null, bid = null, ask = null, strike = null;
+      if (src === 'pyth_btc') { if (b) { mid = b.mid; bid = b.bid; ask = b.ask; } strike = d.strike; }
+      else {
+        const c = d.tandem.contracts.find((x) => x.series_ticker === SRC2SERIES[src]);
+        if (c) { mid = c.mid; bid = c.bid; ask = c.ask; strike = c.strike; }
+      }
+      const big = bps2 !== null && Math.abs(bps2) >= 15;
+      const bpsCls = bps2 === null ? '' : bps2 >= 0 ? 'yes' : 'no';
+      const dec = s.last > 1000 ? 0 : s.last > 10 ? 2 : 4;
+      return '<tr' + (src === 'pyth_btc' ? ' style="border-bottom:2px solid var(--line)"' : '') + '>' +
+        '<td><b>' + COIN[src] + '</b>' + (src === 'pyth_btc' ? ' <span style="color:var(--muted);font-size:10.5px">leader</span>' : '') + '</td>' +
+        '<td class="num mono">' + (s.last ? f$(s.last, dec) : '—') + '</td>' +
+        '<td class="num mono ' + bpsCls + '"' + (big ? ' style="font-weight:700"' : '') + '>' + (bps2 === null ? '—' : (bps2 >= 0 ? '+' : '') + bps2.toFixed(1)) + '</td>' +
+        '<td class="num mono ' + (p15 === null ? '' : p15 >= 0 ? 'yes' : 'no') + '">' + (p15 === null ? '—' : (p15 >= 0 ? '+' : '') + p15.toFixed(2) + '%') + '</td>' +
+        '<td class="num mono">' + (mid === null || mid === undefined ? '—' : cts(mid)) + '</td>' +
+        '<td class="num mono" style="color:var(--muted)">' + (bid !== null && ask !== null && bid !== undefined ? cts(bid) + '/' + cts(ask) : '—') + '</td>' +
+        '</tr>';
+    }).join('');
+    $('tandem').innerHTML = '<tr><th>coin</th><th style="text-align:right">spot (Pyth 1s)</th><th style="text-align:right">Δ2m (bps)</th><th style="text-align:right">Δ15m</th><th style="text-align:right">YES mid</th><th style="text-align:right">bid/ask</th></tr>' + rows;
+  }
+
+  $('tape').innerHTML = (d.tape || []).map((t) => {
+    const ch = t.old ? (t.last - t.old) / t.old * 100 : null;
+    const cls = ch === null ? '' : ch >= 0 ? 'yes' : 'no';
+    return '<div class="chip">' + (TAPE_NAMES[t.source] || t.source) + ' <b class="mono">' + f$(t.last, t.last > 1000 ? 0 : 2) +
+      '</b> <span class="' + cls + ' mono">' + (ch === null ? '—' : (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%') + '</span></div>';
+  }).join('');
+
+  $('recent').innerHTML = '<tr><th>close (MT)</th><th style="text-align:right">strike</th><th style="text-align:right">settle</th><th style="text-align:right">margin</th><th>result</th></tr>' +
+    (d.recent || []).map((r) => {
+      const m = r.settle - r.strike;
+      return '<tr><td class="mono">' + r.close_mt + '</td><td class="num mono">' + f$(r.strike) + '</td><td class="num mono">' + f$(r.settle) +
+        '</td><td class="num mono">' + (m >= 0 ? '+' : '') + m.toFixed(2) + '</td><td class="' + r.result + '">' + r.result.toUpperCase() + '</td></tr>';
+    }).join('');
+}
+
+const FB = ['0–20%', '20–40%', '40–60%', '60–80%', '80–100%'];
+async function loadPath() {
+  let p;
+  try { p = await (await fetch('/api/path')).json(); } catch (e) { return; }
+  $('fullcap').textContent = 'Full windows (' + p.windows.n + ' over 90 days): share settling YES by fraction of the 15 minutes spent above strike.';
+  $('fullbars').innerHTML = p.full.map((r) =>
+    '<div class="bar-row"><span class="lbl mono">' + FB[r.b - 1] + '</span><span class="track"><span class="fill" style="width:' + (r.p_yes * 100) + '%"></span></span>' +
+    '<span class="val mono">' + pct(r.p_yes) + ' · n=' + r.n + '</span></div>').join('');
+  const marks = [...new Set(p.prefix.map((r) => r.min_mark))].sort((a, b) => a - b);
+  $('prefix').innerHTML = '<tr><th>time above ↓ / min →</th>' + marks.map((m) => '<th style="text-align:right">' + m + '</th>').join('') + '</tr>' +
+    FB.map((lbl, bi) => '<tr><td class="mono">' + lbl + '</td>' + marks.map((m) => {
+      const r = p.prefix.find((x) => x.min_mark === m && x.b === bi + 1);
+      return '<td class="num mono">' + (r ? (r.p_yes * 100).toFixed(0) + '%' : '—') + '</td>';
+    }).join('') + '</tr>').join('');
+  const rv = p.reversal;
+  $('reversal').innerHTML = '<b>' + rv.n + '</b> windows spent ≥12 of 15 minutes above the strike. <b class="no">' + rv.settled_no +
+    '</b> (' + (rv.settled_no / rv.n * 100).toFixed(1) + '%) still settled NO — hovering thin: weighted distance averaged <b class="mono">$' +
+    rv.twad_no.toFixed(0) + '</b>, vs <b class="mono">$' + rv.twad_yes.toFixed(0) + '</b> for those that held.';
+  const TB = ['$0–50', '$50–100', '$100–150'];
+  $('thin').innerHTML = p.thin.map((r) =>
+    '<div class="bar-row"><span class="lbl mono">' + TB[r.b - 1] + '</span><span class="track"><span class="fill" style="background:var(--no);width:' + Math.min(100, r.p_no * 400) + '%"></span></span>' +
+    '<span class="val mono">' + pct(r.p_no) + ' NO · n=' + r.n + '</span></div>').join('');
+}
+
+async function loadHistory() {
+  let h;
+  try { h = await (await fetch('/api/history')).json(); } catch (e) { return; }
+  if (!h.length) return;
+  const margins = h.map((r) => r.settle - r.strike);
+  const maxAbs = Math.max(...margins.map(Math.abs));
+  $('mstrip').innerHTML = h.map((r, i) => {
+    const m = margins[i];
+    const hpx = Math.max(2, Math.abs(m) / maxAbs * 52);
+    const up = m >= 0;
+    return '<div class="m" data-l="' + r.close_mt + ' MT · strike ' + f$(r.strike) + ' → ' + f$(r.settle) + ' (' + (up ? '+' : '') + m.toFixed(2) + ', ' + r.result.toUpperCase() + ')"' +
+      ' style="height:' + hpx + 'px;background:var(--' + (r.result === 'yes' ? 'yes' : 'no') + ');align-self:' + (up ? 'flex-start' : 'flex-end') + ';margin-' + (up ? 'top' : 'bottom') + ':' + (55 - hpx) + 'px"></div>';
+  }).join('');
+  const absm = margins.map(Math.abs).sort((a, b) => a - b);
+  $('mstats').textContent = h.length + ' windows · ' + h.filter((r) => r.result === 'yes').length + ' YES / ' + h.filter((r) => r.result === 'no').length +
+    ' NO · median |margin| ' + f$(absm[Math.floor(absm.length / 2)]) + ' · closest ' + f$(absm[0]) + ' · biggest ' + f$(absm[absm.length - 1]);
+  document.querySelectorAll('.mstrip .m').forEach((b) => {
+    b.addEventListener('mousemove', (e) => { tt.style.display = 'block'; tt.textContent = b.dataset.l; tt.style.left = Math.min(e.clientX + 12, innerWidth - 320) + 'px'; tt.style.top = (e.clientY - 34) + 'px'; });
+    b.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+  });
+}
+
+async function loadSystem() {
+  let s;
+  try { s = await (await fetch('/api/system')).json(); } catch (e) { return; }
+  const a = s.ages;
+  const feed = (name, ok, detail) => '<div class="chip ' + (ok ? 'ok' : 'down') + '"><b>' + name + ': ' + (ok ? 'LIVE' : 'DOWN') + '</b> · ' + detail + '</div>';
+  $('sysfeeds').innerHTML =
+    feed('Kalshi books', a.books_s !== null && a.books_s < 120, a.books_s === null ? 'never' : a.books_s + 's ago, ' + compact(a.deltas_10m) + ' deltas/10m') +
+    feed('Index proxy', a.proxy_s !== null && a.proxy_s < 30, compact(a.idx_10m) + ' ticks/10m') +
+    feed('Pyth feeds', a.pyth_s !== null && a.pyth_s < 120, a.pyth_s === null ? 'never' : a.pyth_s + 's ago');
+  const hh = s.holdings;
+  $('systiles').innerHTML = [
+    [hh.db.replace(' ', ''), 'database'], [compact(hh.markets), 'markets'], [compact(hh.trades), 'trades'], [compact(hh.candles), 'candles'],
+    [compact(hh.deltas), 'book deltas'], [compact(hh.snapshots), '1s books'], [compact(hh.spot_bars), 'spot 1s bars'], [hh.events, 'events logged']
+  ].map(([v, l]) => '<div class="tile"><div class="v mono" style="font-size:18px">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+  const bf = s.backfill;
+  const prog = (label, done, total) => {
+    const p = total ? done / total : 0;
+    return '<div class="prog"><div class="t"><span>' + label + '</span><span class="mono">' + compact(done) + '/' + compact(total) + ' · ' + (p * 100).toFixed(1) + '%</span></div>' +
+      '<div class="track2"><div class="fill2' + (p > 0.995 ? ' done' : '') + '" style="width:' + (p * 100) + '%"></div></div></div>';
+  };
+  $('sysbackfill').innerHTML = prog('BTC + commodity 15-min', bf.m15_done, bf.m15_total) +
+    prog('Alt crypto 15-min (lag study)', bf.alt_done, bf.alt_total) +
+    prog('KXBTC hourly', bf.btc_done, bf.btc_total);
+  $('sysstrip').innerHTML = s.continuity.map((r) => {
+    const p = Math.min(1, r.n / 3600);
+    return '<div class="b' + (p < 0.5 ? ' hole' : '') + '" style="height:' + Math.max(3, p * 100) + '%" title="' + r.hour.slice(11, 16) + 'Z — ' + r.n + '"></div>';
+  }).join('');
+  $('findings').innerHTML = (s.findings || []).map((f) => '<div class="finding ' + f.cls + '"><span class="tag">' + f.tag + '</span>' + f.text + '</div>').join('');
+}
+
+let tickBusy = false;
+async function tickGuarded() {
+  if (tickBusy || document.hidden) return;
+  tickBusy = true;
+  try { await tick(); } finally { tickBusy = false; }
+}
+tick().catch(() => {}); loadPath(); loadHistory(); loadSystem();
+setInterval(tickGuarded, 2000);
+setInterval(() => { if (!document.hidden) { loadPath(); loadHistory(); loadSystem(); } }, 300000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tickGuarded(); });
+</script>
+</body></html>
